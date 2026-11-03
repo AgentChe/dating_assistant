@@ -30,11 +30,15 @@ final class Injector {
 
   final SharedPreferencesWithCache _preferences;
 
-  late final sessionManager = SessionManager(_preferences);
+  late final sessionManager = SessionManager(
+    host: GlobalDefinitions.otterScaleHost,
+    apiKey: GlobalDefinitions.otterScaleApiKey,
+  );
 
+  late final profileManager = ProfileManager(_preferences);
+
+  /// Транспорт к нашему серверу — для менеджеров следующих фич (анализ чата, коуч, первые сообщения).
   late final ApiTransport transport = GlobalDefinitions.useMocks
       ? MockApiTransport(server: MockServer(MockDatabase(_preferences)))
-      : RestApiTransport(baseUrl: GlobalDefinitions.apiBaseUrl, defaultHeaders: () => sessionManager.authHeaders);
-
-  late final profileManager = ProfileManager(transport: transport, sessionManager: sessionManager);
+      : RestApiTransport(baseUrl: GlobalDefinitions.apiBaseUrl);
 }

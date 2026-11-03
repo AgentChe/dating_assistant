@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -13,10 +15,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -39,6 +37,28 @@ android {
     }
 }
 
+// Kotlin 2.4 больше не принимает kotlinOptions из шаблона Flutter.
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // OtterScale: аналитика и подписки (Dart-обёртка — lib/misc/analytics/otter_scale.dart).
+    // Локальный aar не тянет свои зависимости, поэтому подключаем их сами; версии — как в car_connect.
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
+    implementation("com.android.billingclient:billing-ktx:8.0.0")
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("com.squareup.okhttp3:okhttp:5.4.0")
+    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation("androidx.core:core-ktx:1.18.0")
+    // Ресурсы aar ссылаются на тему Material Components.
+    implementation("com.google.android.material:material:1.14.0")
 }

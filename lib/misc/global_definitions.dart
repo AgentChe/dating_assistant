@@ -8,4 +8,10 @@ abstract final class GlobalDefinitions {
 
   /// Адрес нашего API.
   static const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080');
+
+  /// OtterScale — аналитика и подписки, как в Swift-приложениях.
+  static const otterScaleHost = 'https://api.korrekted.com';
+
+  /// Ключ приложения в OtterScale. Пока он пустой, SDK не запускается.
+  static const otterScaleApiKey = '';
 }

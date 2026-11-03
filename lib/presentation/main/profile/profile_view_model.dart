@@ -10,15 +10,5 @@ class ProfileViewModel extends ViewModel<Never> {
 
   final ProfileManager _profileManager;
 
-  Profile? _profile;
-
-  Profile? get profile => _profile;
-
-  Future<void> load() async {
-    final profile = await perform(_profileManager.obtain);
-    if (profile == null) return;
-
-    _profile = profile;
-    notifyListeners();
-  }
+  Profile? get profile => _profileManager.profile;
 }

@@ -1,3 +1,4 @@
+import 'package:dating_assistant/misc/components/fade_page_route.dart';
 import 'package:dating_assistant/presentation/main/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -5,7 +6,7 @@ import 'package:flutter/material.dart';
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
 
-  static Route<void> route() => MaterialPageRoute(builder: (_) => const MainScreen());
+  static Route<void> route() => FadePageRoute(builder: (_) => const MainScreen());
 
   @override
   Widget build(BuildContext context) {

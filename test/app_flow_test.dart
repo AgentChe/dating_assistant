@@ -1,28 +1,78 @@
 import 'package:dating_assistant/misc/app.dart';
 import 'package:dating_assistant/misc/injector.dart';
+import 'package:dating_assistant/service/profile/model/voice.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
-  testWidgets('onboarding on mocks creates a profile that the profile screen shows', (tester) async {
+  testWidgets('a new user goes through onboarding and lands on the main screen', (tester) async {
+    // Размер iPhone из макета: 428×926.
+    tester.view
+      ..physicalSize = const Size(1284, 2778)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
     await Injector.configure();
 
+    Future<void> tap(String text) async {
+      await tester.tap(find.text(text).last);
+      await tester.pumpAndSettle();
+    }
+
     await tester.pumpWidget(const App());
     await tester.pumpAndSettle();
-    expect(find.text('About you'), findsOneWidget);
+    expect(find.text('Never wonder what to text again'), findsOneWidget);
 
-    await tester.tap(find.text('Female'));
-    await tester.tap(find.text('Serious relationship'));
+    await tap('Get started');
+    await tester.enterText(find.byType(TextField), 'Alex');
     await tester.pump();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('Main feature goes here'), findsOneWidget);
+    await tap('Continue');
 
-    await tester.tap(find.byTooltip('Profile'));
+    expect(find.text('Nice to meet you, Alex 👋\nWhat are you looking for?'), findsOneWidget);
+    await tap('A relationship');
+    await tap('Continue');
+
+    await tap('Man');
+    await tap('25–34');
+    await tap('Continue');
+
+    await tap('Keeping it going');
+    await tap('Knowing if they’re into me');
+    await tap('Continue');
+
+    expect(find.text('Knowing if they’re into you'), findsOneWidget);
+    await tap('Continue');
+
+    expect(find.text('Your voice · 1 of 3'), findsOneWidget);
+    await tap('That’s me');
+    expect(find.text('Your voice · 2 of 3'), findsOneWidget);
+    await tap('Not me');
+    await tap('That’s me');
+
+    expect(find.text('That’s your voice, Alex'), findsOneWidget);
+    expect(find.text('no emoji'), findsOneWidget);
+    await tap('Sounds like me');
+
+    await tap('lucky! where did you go?');
+    await tap('Continue');
+    expect(find.text('You asked where — Nika already said. Cue asks why, so the chat keeps going.'), findsOneWidget);
+    await tap('Continue');
+
+    expect(find.text('Tuning Cue to you, Alex'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
-    expect(find.text('Female'), findsOneWidget);
-    expect(find.text('Serious relationship'), findsOneWidget);
+
+    expect(find.text('Alex, your Cue is ready'), findsOneWidget);
+    expect(find.text('Warm · 2 of 5'), findsOneWidget);
+    expect(find.text('lowercase, no emoji, direct'), findsOneWidget);
+    await tap('Analyze my first chat');
+
+    expect(find.text('Main feature goes here'), findsOneWidget);
+    final profile = Injector.shared.profileManager.profile!;
+    expect(profile.name, 'Alex');
+    expect(profile.voice.traits, {VoiceTrait.lowercase, VoiceTrait.direct});
   });
 }

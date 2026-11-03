@@ -1,6 +1,9 @@
-# Dating Assistant
+# Cue — Dating Assistant
 
-Flutter-приложение для iOS и Android: анализ общения и развития отношений пары с помощью нейросети.
+Flutter-приложение для iOS и Android: AI-коуч для переписки в знакомствах — разбирает чат, показывает,
+как развиваются отношения, и пишет следующее сообщение голосом пользователя.
+
+Макет: [Figma](https://www.figma.com/design/plPqacnfO51V0VyG4cxlW1/Dating-Assistant).
 
 ## Запуск
 
@@ -32,10 +35,14 @@ lib/
 ├── misc/                           общее (≈ Misc)
 │   ├── app.dart                    корневой виджет: тема, стартовый экран
 │   ├── injector.dart               сборка зависимостей: моки или реальный сервер
-│   ├── global_definitions.dart     адрес API, флаг моков
-│   ├── components/view_model.dart  база для ViewModel: лоадер, «Повторить», actions
-│   ├── custom_views/               общие виджеты (TryAgainSheet)
-│   └── extensions/
+│   ├── global_definitions.dart     адрес API, флаг моков, ключи OtterScale
+│   ├── appearance.dart             цвета и градиенты из Figma (≈ Appearance)
+│   ├── fonts.dart                  текстовые стили, Plus Jakarta Sans (≈ Fonts)
+│   ├── assets.dart                 пути к картинкам и иконкам
+│   ├── analytics/otter_scale.dart  мост к нативному SDK OtterScale
+│   ├── components/                 база ViewModel, переходы между экранами
+│   ├── custom_views/               кнопки, карточки, чипы из Figma, TryAgainSheet
+│   └── extensions/                 подписи значений профиля
 ├── transport/                      сеть (≈ RestAPITransport)
 │   ├── api_request.dart            описание запроса (≈ APIRequestBody)
 │   ├── api_transport.dart          интерфейс транспорта
@@ -44,7 +51,8 @@ lib/
 │   └── mock/                       фейковый сервер; моки = контракт будущего API
 │       └── routes/                 обработчики эндпоинтов по доменам
 ├── service/                        бизнес-логика (≈ Service)
-│   ├── session/                    токен анонимного пользователя
+│   ├── session/                    идентификаторы и подписка из OtterScale
+│   ├── profile/                    ответы онбординга, хранятся на устройстве
 │   └── <домен>/
 │       ├── <домен>_manager.dart    методы домена (≈ XxxManager)
 │       ├── <домен>_mediator.dart   события между экранами (≈ XxxMediator), когда понадобятся
@@ -72,6 +80,22 @@ lib/
 | `lazy var manager = XxxManager()`                | менеджер из `Injector`, в тестах подменяется через конструктор |
 
 Rx не используем: `Future`, `Stream` и `ChangeNotifier` встроены в Dart и Flutter, этого хватает.
+
+## Ресурсы
+
+- Шрифт Plus Jakarta Sans (OFL) — `assets/fonts/plus_jakarta_sans/`, из [tokotype/PlusJakartaSans](https://github.com/tokotype/PlusJakartaSans).
+- 3D-иллюстрации и картинки — `assets/images/` (PNG @3x), иконки — `assets/icons/` (SVG); выгружены из Figma.
+
+## OtterScale
+
+Аналитика и подписки — через наш SDK OtterScale, как в Swift-приложениях. Dart-обёртка
+`misc/analytics/otter_scale.dart` ходит в нативный код по каналу `dating_assistant/otter_scale`:
+
+- iOS — под `OtterScaleiOS` (`ios/Podfile`), мост `ios/Runner/OtterScaleBridge.swift`;
+- Android — `android/app/libs/otterscale.aar` (из car_connect) и `OtterScaleBridge.kt`.
+
+SDK запускает `SessionManager.start()` на сплэше. Ключ приложения — `GlobalDefinitions.otterScaleApiKey`:
+пока он пустой, SDK не запускается, а приложение работает без него.
 
 ## Моки
 

@@ -1,21 +1,56 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
-/// Сессия пользователя (аналог SessionManager из Swift-проектов).
+import 'package:dating_assistant/misc/analytics/otter_scale.dart';
+import 'package:flutter/foundation.dart';
+
+/// Сессия пользователя в OtterScale (аналог SessionManager из Swift-проектов).
 ///
-/// Регистрации нет: пользователь анонимный, токен выдаёт сервер при создании
-/// профиля на онбординге, дальше приложение подписывает им каждый запрос.
+/// OtterScale выдаёт анонимный идентификатор при установке, а после покупки — внутренний.
+/// Ими будем подписывать запросы к нашему серверу; подписку проверяем тоже через SDK.
 class SessionManager {
-  SessionManager(this._preferences);
+  SessionManager({required String host, required String apiKey, OtterScale otterScale = const OtterScale()})
+    : _host = host,
+      _apiKey = apiKey,
+      _otterScale = otterScale;
 
-  static const _tokenKey = 'session.token';
+  final String _host;
 
-  final SharedPreferencesWithCache _preferences;
+  final String _apiKey;
 
-  String? get token => _preferences.getString(_tokenKey);
+  final OtterScale _otterScale;
 
-  bool get isAuthorized => token != null;
+  OtterScaleUserIds? _userIds;
 
-  Map<String, String> get authHeaders => {if (token case final token?) 'Authorization': 'Bearer $token'};
+  /// null, пока SDK не запущен ([start]).
+  String? get anonymousId => _userIds?.anonymousId;
 
-  Future<void> save({required String token}) => _preferences.setString(_tokenKey, token);
+  String? get internalId => _userIds?.internalId;
+
+  /// Запускает SDK и получает идентификаторы. Вызывается со сплэша и ждёт не дольше [timeout],
+  /// чтобы старт приложения не зависел от сети.
+  Future<void> start({Duration timeout = const Duration(seconds: 5)}) async {
+    if (_apiKey.isEmpty) {
+      debugPrint('SessionManager: OtterScale API key is not set, the SDK stays off');
+      return;
+    }
+
+    try {
+      await _otterScale.initialize(host: _host, apiKey: _apiKey).timeout(timeout);
+      _userIds = await _otterScale.userIds();
+    } catch (error) {
+      // Приложение работает и без SDK: идентификаторы получим при следующем запуске.
+      debugPrint('SessionManager: OtterScale is not ready: $error');
+    }
+  }
+
+  Future<bool> hasActiveSubscriptions() async {
+    if (_apiKey.isEmpty) return false;
+
+    try {
+      return await _otterScale.hasActiveSubscription();
+    } catch (error) {
+      debugPrint('SessionManager: cannot check the subscription: $error');
+      return false;
+    }
+  }
 }

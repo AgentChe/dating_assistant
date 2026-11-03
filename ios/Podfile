@@ -1,5 +1,5 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# OtterScaleiOS требует iOS 14+, держим 16 — как в остальных наших приложениях.
+platform :ios, '16.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -31,6 +31,11 @@ target 'Runner' do
   use_frameworks!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # Аналитика и подписки; Dart-обёртка — lib/misc/analytics/otter_scale.dart.
+  # Тегов версий в репозитории нет, как и в car_connect берём основную ветку — коммит фиксирует Podfile.lock.
+  pod 'OtterScaleiOS', :git => 'https://github.com/AgentChe/OtterScaleiOS.git'
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -39,5 +44,9 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # Xcode 27 не собирает поды с deployment target ниже 15 — выравниваем их по приложению.
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+    end
   end
 end

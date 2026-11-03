@@ -1,48 +1,54 @@
+import 'package:dating_assistant/service/profile/model/age_range.dart';
 import 'package:dating_assistant/service/profile/model/dating_goal.dart';
 import 'package:dating_assistant/service/profile/model/gender.dart';
+import 'package:dating_assistant/service/profile/model/hardest_part.dart';
+import 'package:dating_assistant/service/profile/model/profile.dart';
+import 'package:dating_assistant/service/profile/model/spice_level.dart';
+import 'package:dating_assistant/service/profile/model/voice.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
-import 'package:dating_assistant/service/session/session_manager.dart';
-import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
-import 'package:dating_assistant/transport/mock/mock_database.dart';
-import 'package:dating_assistant/transport/mock/mock_server.dart';
-import 'package:dating_assistant/transport/network_error.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
-  late SessionManager sessionManager;
+  late SharedPreferencesWithCache preferences;
   late ProfileManager profileManager;
 
   setUp(() async {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
-    final preferences = await SharedPreferencesWithCache.create(
-      cacheOptions: const SharedPreferencesWithCacheOptions(),
-    );
-    sessionManager = SessionManager(preferences);
-    profileManager = ProfileManager(
-      transport: MockApiTransport(server: MockServer(MockDatabase(preferences)), latency: Duration.zero),
-      sessionManager: sessionManager,
-    );
+    preferences = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
+    profileManager = ProfileManager(preferences);
   });
 
-  test('create saves the session and obtain returns the same profile', () async {
-    expect(sessionManager.isAuthorized, isFalse);
+  test('saves the profile and reads it back', () async {
+    expect(profileManager.profile, isNull);
 
-    await profileManager.create(gender: Gender.female, age: 27, datingGoal: DatingGoal.relationship);
-    expect(sessionManager.isAuthorized, isTrue);
+    await profileManager.save(
+      const Profile(
+        name: 'Alex',
+        goal: DatingGoal.relationship,
+        gender: Gender.nonBinary,
+        ageRange: AgeRange.from25To34,
+        hardestParts: [HardestPart.keepingItGoing, HardestPart.knowingIfInterested],
+        voice: Voice({VoiceTrait.lowercase, VoiceTrait.direct}),
+        spice: SpiceLevel.warm,
+      ),
+    );
 
-    final profile = await profileManager.obtain();
-    expect(profile.gender, Gender.female);
-    expect(profile.age, 27);
-    expect(profile.datingGoal, DatingGoal.relationship);
+    final profile = profileManager.profile!;
+    expect(profile.name, 'Alex');
+    expect(profile.goal, DatingGoal.relationship);
+    expect(profile.gender, Gender.nonBinary);
+    expect(profile.ageRange, AgeRange.from25To34);
+    expect(profile.hardestParts, [HardestPart.keepingItGoing, HardestPart.knowingIfInterested]);
+    expect(profile.voice.traits, {VoiceTrait.lowercase, VoiceTrait.direct});
+    expect(profile.spice, SpiceLevel.warm);
   });
 
-  test('obtain fails with 404 before onboarding', () async {
-    await expectLater(
-      profileManager.obtain(),
-      throwsA(isA<NetworkError>().having((error) => error.statusCode, 'statusCode', 404)),
-    );
+  test('ignores a profile saved by an older model', () async {
+    await preferences.setString('profile', '{"gender": "female", "age": 27}');
+
+    expect(profileManager.profile, isNull);
   });
 }
