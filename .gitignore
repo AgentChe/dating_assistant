@@ -1,0 +1,89 @@
+# Собран из шаблона Flutter, flutter__car_connect и iOS-проектов (Xcode).
+# Платформенные правила дополнительно лежат в ios/.gitignore и android/.gitignore.
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Misc ---
+*.class
+*.log
+*.pyc
+*.swp
+*~
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# --- IDE: IntelliJ / Android Studio ---
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# --- IDE: VS Code ---
+.vscode/
+
+# --- AI-инструменты (локальные настройки, не код) ---
+.claude/
+.cursor/
+.opencode/
+.agent/
+
+# --- Flutter / Dart / Pub ---
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+.fvm/
+/build/
+/coverage/
+lib/generated_plugin_registrant.dart
+
+# --- Symbolication / Obfuscation (flutter build --split-debug-info / --obfuscate) ---
+app.*.symbols
+app.*.map.json
+
+# --- Android ---
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/build/reports/problems
+
+# --- iOS / Xcode ---
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.mobileprovision
+**/PIFCache/
+
+# --- fastlane ---
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# --- Секреты: ключи и окружение не коммитим ---
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
