@@ -77,6 +77,8 @@ lib/
 | Mediator на `PublishRelay`                       | `StreamController.broadcast()`                                |
 | `protocol XxxManagerProtocol`                    | не нужен: в Dart любой класс уже интерфейс (`implements`)     |
 | `static func make()`                             | `static Route route()`                                        |
+| `MainViewController` + `TabView` + `MainViewCoordinator` | `MainScreen` + `MainTabBar` + `MainViewModel`         |
+| `NavigationController` в табе                    | свой `Navigator` у вкладки; поверх таб-бара — `Navigator.of(context, rootNavigator: true)` |
 | `lazy var manager = XxxManager()`                | менеджер из `Injector`, в тестах подменяется через конструктор |
 
 Rx не используем: `Future`, `Stream` и `ChangeNotifier` встроены в Dart и Flutter, этого хватает.

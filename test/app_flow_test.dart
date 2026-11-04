@@ -1,6 +1,8 @@
 import 'package:dating_assistant/misc/app.dart';
 import 'package:dating_assistant/misc/custom_views/glass_button.dart';
 import 'package:dating_assistant/misc/injector.dart';
+import 'package:dating_assistant/presentation/main/home/home_screen.dart';
+import 'package:dating_assistant/presentation/main/main/views/main_tab_bar.dart';
 import 'package:dating_assistant/service/profile/model/voice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,7 +83,8 @@ void main() {
     await tester.tap(find.byType(GlassButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Main feature goes here'), findsOneWidget);
+    expect(find.byType(MainTabBar), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
     final profile = Injector.shared.profileManager.profile!;
     expect(profile.name, 'Alex');
     expect(profile.voice.traits, {VoiceTrait.lowercase, VoiceTrait.direct});

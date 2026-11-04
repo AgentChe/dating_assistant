@@ -34,4 +34,11 @@ abstract final class AppIcons {
   static const close = 'assets/icons/x.svg';
 
   static const copy = 'assets/icons/copy.svg';
+
+  /// Вкладка «Main».
+  static const dashboard = 'assets/icons/dashboard.svg';
+
+  static const history = 'assets/icons/history.svg';
+
+  static const user = 'assets/icons/user.svg';
 }
