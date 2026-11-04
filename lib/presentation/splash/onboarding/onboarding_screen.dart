@@ -6,6 +6,7 @@ import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/misc/components/fade_page_route.dart';
 import 'package:dating_assistant/misc/custom_views/try_again_sheet.dart';
 import 'package:dating_assistant/presentation/main/main/main_screen.dart';
+import 'package:dating_assistant/presentation/splash/paygate/paygate_screen.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/onboarding_view_model.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/views/about_you_step.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/views/building_step.dart';
@@ -142,8 +143,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _handle(OnboardingAction action) {
     switch (action) {
-      case OnboardingAction.finished:
-        Navigator.of(context).pushAndRemoveUntil(MainScreen.route(), (_) => false);
+      case OnboardingAction.openMain:
+        MainScreen.setAsRoot(context);
+      case OnboardingAction.openPaygate:
+        Navigator.of(context).pushAndRemoveUntil(PaygateScreen.route(onFinish: MainScreen.setAsRoot), (_) => false);
     }
   }
 }

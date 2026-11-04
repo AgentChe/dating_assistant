@@ -3,7 +3,7 @@ import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 
-enum SplashRoute { onboarding, main }
+enum SplashRoute { onboarding, paygate, main }
 
 /// Стартовая логика: запускает SDK и решает, куда вести пользователя.
 class SplashViewModel extends ViewModel<SplashRoute> {
@@ -15,9 +15,16 @@ class SplashViewModel extends ViewModel<SplashRoute> {
 
   final ProfileManager _profileManager;
 
-  /// Без профиля — на онбординг. Сюда же добавятся конфиг с сервера и пейвол для тех, у кого нет подписки.
+  /// Без профиля — на онбординг, без подписки — на пейгейт (как paygateTransitionMain в Swift-проектах).
+  /// Сюда же добавится конфиг с сервера.
   Future<void> start() async {
     await _sessionManager.start();
-    emit(_profileManager.profile == null ? SplashRoute.onboarding : SplashRoute.main);
+    if (_profileManager.profile == null) {
+      emit(SplashRoute.onboarding);
+      return;
+    }
+
+    final hasSubscription = await _sessionManager.hasActiveSubscriptions();
+    emit(hasSubscription ? SplashRoute.main : SplashRoute.paygate);
   }
 }

@@ -7,6 +7,7 @@ import 'package:dating_assistant/service/profile/model/hardest_part.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/service/profile/model/voice.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
+import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -22,7 +23,11 @@ void main() {
       cacheOptions: const SharedPreferencesWithCacheOptions(),
     );
     profileManager = ProfileManager(preferences);
-    viewModel = OnboardingViewModel(profileManager: profileManager);
+    viewModel = OnboardingViewModel(
+      profileManager: profileManager,
+      // Без ключа OtterScale подписки нет — после плана откроется пейгейт.
+      sessionManager: SessionManager(host: 'https://otter.test', apiKey: ''),
+    );
   });
 
   /// Проходит онбординг до карточек голоса.
@@ -87,6 +92,12 @@ void main() {
     expect(profile.hardestParts, [HardestPart.startingConversation, HardestPart.askingThemOut]);
     expect(profile.voice.traits, {VoiceTrait.emoji});
     expect(profile.spice, SpiceLevel.playful);
+
+    final actions = <OnboardingAction>[];
+    viewModel.actions.listen(actions.add);
+    viewModel.next();
+    await pumpEventQueue();
+    expect(actions, [OnboardingAction.openPaygate]);
   });
 
   test('back undoes voice answers one card at a time', () {

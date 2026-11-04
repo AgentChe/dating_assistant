@@ -1,10 +1,14 @@
 import 'package:dating_assistant/misc/app.dart';
+import 'package:dating_assistant/misc/custom_views/glass_button.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/service/profile/model/voice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+import 'fakes/fake_store.dart';
 
 void main() {
   testWidgets('a new user goes through onboarding and lands on the main screen', (tester) async {
@@ -14,6 +18,7 @@ void main() {
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+    InAppPurchasePlatform.instance = FakeStore(isStoreAvailable: false);
     await Injector.configure();
 
     Future<void> tap(String text) async {
@@ -69,6 +74,12 @@ void main() {
     expect(find.text('Warm · 2 of 5'), findsOneWidget);
     expect(find.text('lowercase, no emoji, direct'), findsOneWidget);
     await tap('Analyze my first chat');
+
+    // Подписки нет — пейгейт; в тестах магазин недоступен, поэтому тарифы не загрузились.
+    expect(find.text('Keep the chat going'), findsOneWidget);
+    expect(find.textContaining('Couldn’t load the plans.', findRichText: true), findsOneWidget);
+    await tester.tap(find.byType(GlassButton));
+    await tester.pumpAndSettle();
 
     expect(find.text('Main feature goes here'), findsOneWidget);
     final profile = Injector.shared.profileManager.profile!;

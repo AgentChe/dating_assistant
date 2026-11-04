@@ -14,4 +14,18 @@ abstract final class GlobalDefinitions {
 
   /// Ключ приложения в OtterScale. Пока он пустой, SDK не запускается.
   static const otterScaleApiKey = '';
+
+  /// Годовая подписка Cue Plus — одинаковый id в App Store и Google Play.
+  // TODO: вписать id годовой подписки, когда создадим продукт в App Store.
+  static const paygateYearlyId = '';
+
+  /// Недельная подписка Cue Plus.
+  // TODO: вписать id недельной подписки, когда создадим продукт в App Store.
+  static const paygateWeeklyId = '';
+
+  // TODO: вписать ссылку на условия использования.
+  static const termsOfServiceUrl = '';
+
+  // TODO: вписать ссылку на политику конфиденциальности.
+  static const privacyPolicyUrl = '';
 }

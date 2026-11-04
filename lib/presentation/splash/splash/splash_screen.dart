@@ -5,6 +5,7 @@ import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/main/main/main_screen.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/onboarding_screen.dart';
+import 'package:dating_assistant/presentation/splash/paygate/paygate_screen.dart';
 import 'package:dating_assistant/presentation/splash/splash/splash_view_model.dart';
 import 'package:flutter/material.dart';
 
@@ -65,6 +66,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void _route(SplashRoute route) {
     final next = switch (route) {
       SplashRoute.onboarding => OnboardingScreen.route(),
+      SplashRoute.paygate => PaygateScreen.route(onFinish: MainScreen.setAsRoot),
       SplashRoute.main => MainScreen.route(),
     };
     Navigator.of(context).pushAndRemoveUntil(next, (_) => false);

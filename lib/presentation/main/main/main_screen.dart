@@ -8,6 +8,11 @@ class MainScreen extends StatelessWidget {
 
   static Route<void> route() => FadePageRoute(builder: (_) => const MainScreen());
 
+  /// Делает главный экран корневым — как window.rootViewController в Swift-проектах.
+  static void setAsRoot(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(route(), (_) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

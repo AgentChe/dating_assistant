@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/assets.dart';
+import 'package:dating_assistant/misc/custom_views/bottom_buttons.dart';
 import 'package:dating_assistant/misc/custom_views/primary_button.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/onboarding_view_model.dart';
-import 'package:dating_assistant/presentation/splash/onboarding/views/onboarding_step_layout.dart';
 import 'package:flutter/widgets.dart';
 
 class WelcomeStep extends StatelessWidget {
@@ -41,7 +41,7 @@ class WelcomeStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        OnboardingFooter(
+        BottomButtons(
           buttons: [PrimaryButton(title: 'Get started', onPressed: viewModel.next)],
         ),
       ],

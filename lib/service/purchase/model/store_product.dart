@@ -1,0 +1,66 @@
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
+import 'package:intl/intl.dart';
+
+/// Подписка из App Store или Google Play (аналог IAPProduct из Swift-проектов).
+class StoreProduct {
+  const StoreProduct(this.details);
+
+  final ProductDetails details;
+
+  String get id => details.id;
+
+  /// Цена, как её показывает магазин: «$59.99».
+  String get price => details.price;
+
+  double get rawPrice => details.rawPrice;
+
+  String get currencyCode => details.currencyCode;
+
+  /// Цена за часть периода — «$1.15» в неделю у годовой подписки (аналог Currency с div).
+  String priceDividedBy(int divider) => NumberFormat.simpleCurrency(name: currencyCode).format(rawPrice / divider);
+
+  /// Сколько дней длится бесплатный пробный период; null — без пробного периода.
+  int? get freeTrialDays => switch (details) {
+    final AppStoreProductDetails details => _appStoreTrialDays(details),
+    final GooglePlayProductDetails details => _googlePlayTrialDays(details),
+    _ => null,
+  };
+
+  static int? _appStoreTrialDays(AppStoreProductDetails details) {
+    final offer = details.skProduct.introductoryPrice;
+    if (offer == null || offer.paymentMode != SKProductDiscountPaymentMode.freeTrail) return null;
+
+    final period = offer.subscriptionPeriod;
+    return period.numberOfUnits *
+        switch (period.unit) {
+          SKSubscriptionPeriodUnit.day => 1,
+          SKSubscriptionPeriodUnit.week => 7,
+          SKSubscriptionPeriodUnit.month => 30,
+          SKSubscriptionPeriodUnit.year => 365,
+        };
+  }
+
+  /// У подписки Google Play бесплатный период — фаза предложения с нулевой ценой.
+  static int? _googlePlayTrialDays(GooglePlayProductDetails details) {
+    final offers = details.productDetails.subscriptionOfferDetails;
+    final index = details.subscriptionIndex;
+    if (offers == null || index == null) return null;
+
+    for (final phase in offers[index].pricingPhases) {
+      if (phase.priceAmountMicros == 0) return _days(phase.billingPeriod);
+    }
+    return null;
+  }
+
+  /// Длительность в днях из ISO 8601: «P3D», «P1W», «P1M».
+  static int? _days(String period) {
+    final match = RegExp(r'^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?$').firstMatch(period);
+    if (match == null) return null;
+
+    int part(int group) => int.tryParse(match[group] ?? '') ?? 0;
+    return part(1) * 365 + part(2) * 30 + part(3) * 7 + part(4);
+  }
+}

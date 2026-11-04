@@ -97,6 +97,20 @@ Rx не используем: `Future`, `Stream` и `ChangeNotifier` встро�
 SDK запускает `SessionManager.start()` на сплэше. Ключ приложения — `GlobalDefinitions.otterScaleApiKey`:
 пока он пустой, SDK не запускается, а приложение работает без него.
 
+## Покупки
+
+Как в Swift-приложениях: `service/purchase/PurchaseManager` (≈ IAPManager + PaygateInteractor) покупает через
+плагин `in_app_purchase`, а подписку подтверждает OtterScale:
+
+- iOS — плагин переключён на StoreKit 1 (`PurchaseManager.registerStore`): его очередь слушает OtterScaleiOS,
+  сам валидирует чек и присылает событие `receipt_validated`;
+- Android — чек Google Play отдаём в OtterScale методом `save_purchase`, как в car_connect;
+- магазин присылает покупки и без пейгейта (продления, незавершённые), поэтому `PurchaseManager.start()`
+  слушает его с запуска приложения.
+
+Пейгейт показывается после онбординга и на старте, если подписки нет. Id подписок, Terms и Privacy —
+в `GlobalDefinitions` (пока пустые, с TODO).
+
 ## Моки
 
 Пока сервера нет, `MockApiTransport` отправляет запросы в фейковый сервер (`transport/mock/`). Обработчики

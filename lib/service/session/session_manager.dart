@@ -8,10 +8,10 @@ import 'package:flutter/foundation.dart';
 /// OtterScale выдаёт анонимный идентификатор при установке, а после покупки — внутренний.
 /// Ими будем подписывать запросы к нашему серверу; подписку проверяем тоже через SDK.
 class SessionManager {
-  SessionManager({required String host, required String apiKey, OtterScale otterScale = const OtterScale()})
+  SessionManager({required String host, required String apiKey, OtterScale? otterScale})
     : _host = host,
       _apiKey = apiKey,
-      _otterScale = otterScale;
+      _otterScale = otterScale ?? OtterScale.shared;
 
   final String _host;
 
@@ -21,6 +21,9 @@ class SessionManager {
 
   OtterScaleUserIds? _userIds;
 
+  /// SDK включён: ключ приложения задан в GlobalDefinitions.
+  bool get isEnabled => _apiKey.isNotEmpty;
+
   /// null, пока SDK не запущен ([start]).
   String? get anonymousId => _userIds?.anonymousId;
 
@@ -29,7 +32,7 @@ class SessionManager {
   /// Запускает SDK и получает идентификаторы. Вызывается со сплэша и ждёт не дольше [timeout],
   /// чтобы старт приложения не зависел от сети.
   Future<void> start({Duration timeout = const Duration(seconds: 5)}) async {
-    if (_apiKey.isEmpty) {
+    if (!isEnabled) {
       debugPrint('SessionManager: OtterScale API key is not set, the SDK stays off');
       return;
     }
@@ -43,8 +46,19 @@ class SessionManager {
     }
   }
 
+  /// Перечитывает идентификаторы — после покупки появляется внутренний.
+  Future<void> refreshUserIds() async {
+    if (!isEnabled) return;
+
+    try {
+      _userIds = await _otterScale.userIds();
+    } catch (error) {
+      debugPrint('SessionManager: cannot read the user ids: $error');
+    }
+  }
+
   Future<bool> hasActiveSubscriptions() async {
-    if (_apiKey.isEmpty) return false;
+    if (!isEnabled) return false;
 
     try {
       return await _otterScale.hasActiveSubscription();

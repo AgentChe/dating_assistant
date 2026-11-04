@@ -1,5 +1,6 @@
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
+import 'package:dating_assistant/service/purchase/purchase_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
@@ -36,6 +37,8 @@ final class Injector {
   );
 
   late final profileManager = ProfileManager(_preferences);
+
+  late final purchaseManager = PurchaseManager(sessionManager: sessionManager);
 
   /// Транспорт к нашему серверу — для менеджеров следующих фич (анализ чата, коуч, первые сообщения).
   late final ApiTransport transport = GlobalDefinitions.useMocks

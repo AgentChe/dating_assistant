@@ -7,6 +7,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.ViewGroup
 import com.otterscale.analytics.OtterAnalyticsClient
+import com.otterscale.analytics.core.toBase64
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -29,7 +30,28 @@ class OtterScaleBridge(private val activity: Activity, messenger: BinaryMessenge
             "get_user_ids" -> result.success(userIds())
             // До инициализации SDK бросает исключение — считаем, что подписки нет.
             "has_active_subscription" -> result.success(runCatching { client.isPaidAccessAvailable }.getOrDefault(false))
+            "save_purchase" -> savePurchase(call, result)
             else -> result.notImplemented()
+        }
+    }
+
+    /** Отдаёт чек Google Play в OtterScale на валидацию, как car_connect; отвечает, когда SDK его проверил. */
+    private fun savePurchase(call: MethodCall, result: MethodChannel.Result) {
+        val purchaseData = call.argument<String>("purchase_data")
+        val productId = call.argument<String>("product_id")
+        val price = call.argument<Double>("price")
+        val currency = call.argument<String>("currency")
+        if (purchaseData == null || productId == null || price == null || currency == null) {
+            result.error("invalid_arguments", "purchase_data, product_id, price and currency are required", null)
+            return
+        }
+
+        try {
+            client.savePurchase(purchaseData.toBase64(), productId, price.toFloat(), currency) {
+                mainHandler.post { result.success(null) }
+            }
+        } catch (error: Exception) {
+            result.error("save_purchase_failed", error.message, null)
         }
     }
 

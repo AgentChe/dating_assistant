@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:dating_assistant/misc/custom_views/bottom_buttons.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/views/onboarding_header.dart';
 import 'package:flutter/widgets.dart';
@@ -45,29 +46,8 @@ class OnboardingStepLayout extends StatelessWidget {
             ),
           ),
         ),
-        OnboardingFooter(buttons: buttons),
+        BottomButtons(buttons: buttons),
       ],
-    );
-  }
-}
-
-/// Кнопки внизу шага: над home indicator, а при открытой клавиатуре — над ней.
-class OnboardingFooter extends StatelessWidget {
-  const OnboardingFooter({super.key, required this.buttons});
-
-  final List<Widget> buttons;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, math.max(MediaQuery.paddingOf(context).bottom + 3, 16)),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (index, button) in buttons.indexed) ...[if (index > 0) const SizedBox(height: 8), button],
-        ],
-      ),
     );
   }
 }

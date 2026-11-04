@@ -19,6 +19,8 @@ abstract final class AppImages {
   static const gallery3d = 'assets/images/icons_3d/gallery.png';
 
   static const question3d = 'assets/images/icons_3d/question.png';
+
+  static const bars3d = 'assets/images/icons_3d/bars.png';
 }
 
 /// Векторные иконки из assets/icons (SVG из Figma).

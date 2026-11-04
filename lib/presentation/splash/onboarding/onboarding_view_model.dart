@@ -9,6 +9,7 @@ import 'package:dating_assistant/service/profile/model/profile.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/service/profile/model/voice.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
+import 'package:dating_assistant/service/session/session_manager.dart';
 
 /// Шаги онбординга в порядке показа.
 enum OnboardingStep {
@@ -33,14 +34,18 @@ enum OnboardingStep {
   };
 }
 
-enum OnboardingAction { finished }
+/// Куда вести после онбординга: с подпиской — на главный, без неё — на пейгейт.
+enum OnboardingAction { openMain, openPaygate }
 
 /// Онбординг: знакомство, калибровка голоса и пример — в конце сохраняет профиль.
 class OnboardingViewModel extends ViewModel<OnboardingAction> {
-  OnboardingViewModel({ProfileManager? profileManager})
-    : _profileManager = profileManager ?? Injector.shared.profileManager;
+  OnboardingViewModel({ProfileManager? profileManager, SessionManager? sessionManager})
+    : _profileManager = profileManager ?? Injector.shared.profileManager,
+      _sessionManager = sessionManager ?? Injector.shared.sessionManager;
 
   final ProfileManager _profileManager;
+
+  final SessionManager _sessionManager;
 
   var _step = OnboardingStep.welcome;
 
@@ -134,7 +139,7 @@ class OnboardingViewModel extends ViewModel<OnboardingAction> {
       case OnboardingStep.voice:
         return;
       case OnboardingStep.plan:
-        emit(OnboardingAction.finished);
+        _finish();
       default:
         _go(OnboardingStep.values[_step.index + 1]);
     }
@@ -218,6 +223,12 @@ class OnboardingViewModel extends ViewModel<OnboardingAction> {
       ),
     );
     _go(OnboardingStep.plan);
+  }
+
+  /// Как в Swift-проектах: без подписки после онбординга показываем пейгейт.
+  Future<void> _finish() async {
+    final hasSubscription = await _sessionManager.hasActiveSubscriptions();
+    emit(hasSubscription ? OnboardingAction.openMain : OnboardingAction.openPaygate);
   }
 
   void _go(OnboardingStep step, {bool isBack = false}) {

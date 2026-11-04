@@ -30,14 +30,16 @@ final class OtterScaleBridge: NSObject {
 
 // MARK: OtterScaleReceiptValidationDelegate
 extension OtterScaleBridge: OtterScaleReceiptValidationDelegate {
+    /// Первая валидация завершает `initialize`; о каждой, включая покупки и восстановление,
+    /// сообщаем во Flutter — там её ждёт PurchaseManager (как PaygateInteractor).
     func otterScaleDidValidatedReceipt(with result: AppStoreValidateResult?) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
 
-            OtterScale.shared.removeReceiptValidation(delegate: self)
             isReady = true
             pendingInitializations.forEach { $0(nil) }
             pendingInitializations.removeAll()
+            channel.invokeMethod("receipt_validated", arguments: nil)
         }
     }
 }
