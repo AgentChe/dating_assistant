@@ -31,6 +31,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - assets/images/home/
     - assets/images/icons_3d/
     - assets/images/onboarding/
     - assets/images/splash/

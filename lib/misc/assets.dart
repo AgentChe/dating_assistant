@@ -21,6 +21,11 @@ abstract final class AppImages {
   static const question3d = 'assets/images/icons_3d/question.png';
 
   static const bars3d = 'assets/images/icons_3d/bars.png';
+
+  /// Иллюстрация баннера «Analyze your chat»: анкета Nika и чат с ней, уже с наклоном.
+  static const analyzeProfileCard = 'assets/images/home/analyze_profile_card.png';
+
+  static const analyzeChatCard = 'assets/images/home/analyze_chat_card.png';
 }
 
 /// Векторные иконки из assets/icons (SVG из Figma).
@@ -36,6 +41,8 @@ abstract final class AppIcons {
   static const close = 'assets/icons/x.svg';
 
   static const copy = 'assets/icons/copy.svg';
+
+  static const menu = 'assets/icons/menu.svg';
 
   /// Вкладка «Main».
   static const dashboard = 'assets/icons/dashboard.svg';
