@@ -3,14 +3,13 @@ import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/misc/custom_views/pressable.dart';
 import 'package:dating_assistant/misc/custom_views/svg_icon.dart';
 import 'package:dating_assistant/misc/fonts.dart';
-import 'package:dating_assistant/presentation/splash/paygate/paygate_view_model.dart';
 import 'package:flutter/widgets.dart';
 
-/// Плашка об ошибке под шапкой; по нажатию скрывается.
+/// Плашка об ошибке: красный крестик и текст; по нажатию скрывается.
 class FailureToast extends StatelessWidget {
-  const FailureToast({super.key, required this.failure, required this.onTap});
+  const FailureToast({super.key, required this.message, required this.onTap});
 
-  final PaygateFailure failure;
+  final String message;
 
   final VoidCallback onTap;
 
@@ -42,13 +41,7 @@ class FailureToast extends StatelessWidget {
                 child: const SvgIcon(AppIcons.close, size: 16, color: Appearance.white),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: Text(switch (failure) {
-                  PaygateFailure.paymentFailed => 'Payment didn’t go through. You weren’t charged.',
-                  PaygateFailure.nothingToRestore => 'Nothing to restore on this account.',
-                  PaygateFailure.restoreFailed => 'Couldn’t restore purchases. Try again later.',
-                }, style: Fonts.label),
-              ),
+              Expanded(child: Text(message, style: Fonts.label)),
             ],
           ),
         ),

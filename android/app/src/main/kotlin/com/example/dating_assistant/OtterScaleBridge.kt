@@ -31,9 +31,26 @@ class OtterScaleBridge(private val activity: Activity, messenger: BinaryMessenge
             // До инициализации SDK бросает исключение — считаем, что подписки нет.
             "has_active_subscription" -> result.success(runCatching { client.isPaidAccessAvailable }.getOrDefault(false))
             "save_purchase" -> savePurchase(call, result)
+            "get_subscriptions" -> result.success(subscriptions())
             else -> result.notImplemented()
         }
     }
+
+    /** Подписки со всех платформ — для карточки плана в профиле; до инициализации SDK — пустой список. */
+    private fun subscriptions(): List<Map<String, Any?>> = runCatching {
+        val subscriptions = client.subscriptions ?: return@runCatching emptyList<Map<String, Any?>>()
+        listOfNotNull(subscriptions.apple, subscriptions.google, subscriptions.stripe, subscriptions.payPal)
+            .flatten()
+            .map { product ->
+                mapOf<String, Any?>(
+                    "product_id" to product.product,
+                    "valid" to product.valid,
+                    "expiration" to product.expiration,
+                    "status" to product.status?.name?.lowercase(),
+                    "renewing" to product.renewing,
+                )
+            }
+    }.getOrDefault(emptyList())
 
     /** Отдаёт чек Google Play в OtterScale на валидацию, как car_connect; отвечает, когда SDK его проверил. */
     private fun savePurchase(call: MethodCall, result: MethodChannel.Result) {

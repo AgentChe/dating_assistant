@@ -13,6 +13,39 @@ class OtterScaleUserIds {
   final String? internalId;
 }
 
+/// Подписка, как её видит OtterScale.
+class OtterScaleSubscription {
+  const OtterScaleSubscription({
+    required this.productId,
+    required this.isValid,
+    required this.expiration,
+    required this.status,
+    required this.isRenewing,
+  });
+
+  factory OtterScaleSubscription.fromJson(Map<Object?, Object?> json) => OtterScaleSubscription(
+    productId: json['product_id'] as String? ?? '',
+    isValid: json['valid'] as bool? ?? false,
+    expiration: json['expiration'] as String?,
+    status: json['status'] as String?,
+    isRenewing: json['renewing'] as bool? ?? false,
+  );
+
+  final String productId;
+
+  /// Подписка действует.
+  final bool isValid;
+
+  /// Когда закончится текущий период — строка с датой в формате SDK (ISO 8601).
+  final String? expiration;
+
+  /// `trial`, `paid` или `refund`.
+  final String? status;
+
+  /// Продлится автоматически: пользователь не отменил подписку.
+  final bool isRenewing;
+}
+
 /// Мост к нативному SDK OtterScale: на iOS — под OtterScaleiOS, на Android — otterscale.aar.
 ///
 /// Нативная сторона канала: ios/Runner/OtterScaleBridge.swift и
@@ -45,6 +78,12 @@ class OtterScale {
 
   /// Есть ли действующая подписка или вечная покупка.
   Future<bool> hasActiveSubscription() async => await _channel.invokeMethod<bool>('has_active_subscription') ?? false;
+
+  /// Подписки пользователя со всех платформ, включая закончившиеся.
+  Future<List<OtterScaleSubscription>> subscriptions() async {
+    final subscriptions = await _channel.invokeListMethod<Map<Object?, Object?>>('get_subscriptions') ?? const [];
+    return [for (final json in subscriptions) OtterScaleSubscription.fromJson(json)];
+  }
 
   /// Android: отдаёт чек Google Play на валидацию и завершается, когда OtterScale его проверил.
   Future<void> savePurchase({

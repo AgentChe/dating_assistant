@@ -1,52 +1,17 @@
 import 'package:dating_assistant/presentation/splash/paygate/paygate_view_model.dart';
 import 'package:dating_assistant/service/purchase/model/purchase_error.dart';
 import 'package:dating_assistant/service/purchase/model/purchase_result.dart';
-import 'package:dating_assistant/service/purchase/model/store_product.dart';
-import 'package:dating_assistant/service/purchase/purchase_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../fakes/fake_store.dart';
-
-class _FakePurchaseManager implements PurchaseManager {
-  final products = [StoreProduct(fakeProduct('yearly', 59.99)), StoreProduct(fakeProduct('weekly', 7.99))];
-
-  var result = PurchaseResult.subscribed;
-
-  Object? error;
-
-  final bought = <String>[];
-
-  @override
-  void start() {}
-
-  @override
-  Future<List<StoreProduct>> obtainProducts(List<String> ids) async => [
-    for (final id in ids) ...products.where((product) => product.id == id),
-  ];
-
-  @override
-  Future<PurchaseResult> buy(StoreProduct product) async {
-    bought.add(product.id);
-    return _result();
-  }
-
-  @override
-  Future<PurchaseResult> restore() async => _result();
-
-  PurchaseResult _result() {
-    final error = this.error;
-    if (error != null) throw error;
-    return result;
-  }
-}
+import '../fakes/fake_managers.dart';
 
 void main() {
-  late _FakePurchaseManager purchaseManager;
+  late FakePurchaseManager purchaseManager;
   late PaygateViewModel viewModel;
   late List<PaygateAction> actions;
 
   setUp(() async {
-    purchaseManager = _FakePurchaseManager();
+    purchaseManager = FakePurchaseManager();
     viewModel = PaygateViewModel(purchaseManager: purchaseManager, yearlyId: 'yearly', weeklyId: 'weekly');
     actions = [];
     viewModel.actions.listen(actions.add);

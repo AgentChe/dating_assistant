@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dating_assistant/misc/analytics/otter_scale.dart';
+import 'package:dating_assistant/service/session/model/subscription.dart';
 import 'package:flutter/foundation.dart';
 
 /// Сессия пользователя в OtterScale (аналог SessionManager из Swift-проектов).
@@ -67,4 +68,29 @@ class SessionManager {
       return false;
     }
   }
+
+  /// Действующая подписка с датой и статусом; null — подписки нет, SDK выключен или не ответил.
+  Future<Subscription?> activeSubscription() async {
+    if (!isEnabled) return null;
+
+    try {
+      final active = [
+        for (final subscription in await _otterScale.subscriptions())
+          if (subscription.isValid)
+            Subscription(
+              productId: subscription.productId,
+              expiresAt: DateTime.tryParse(subscription.expiration ?? '')?.toLocal(),
+              isTrial: subscription.status == 'trial',
+              willRenew: subscription.isRenewing,
+            ),
+      ];
+      // Сменил тариф — действуют обе подписки; показываем ту, что закончится позже.
+      return active.isEmpty ? null : active.reduce((a, b) => _endOf(b).isAfter(_endOf(a)) ? b : a);
+    } catch (error) {
+      debugPrint('SessionManager: cannot read the subscriptions: $error');
+      return null;
+    }
+  }
+
+  static DateTime _endOf(Subscription subscription) => subscription.expiresAt ?? DateTime(0);
 }

@@ -39,6 +39,14 @@ extension DatingGoalTitle on DatingGoal {
     DatingGoal.unsure => 'Not sure yet',
   };
 
+  /// Коротко — для профиля: «Looking for · Relationship».
+  String get shortTitle => switch (this) {
+    DatingGoal.relationship => 'Relationship',
+    DatingGoal.casual => 'Casual',
+    DatingGoal.friends => 'Friendship',
+    DatingGoal.unsure => 'Not sure',
+  };
+
   String get subtitle => switch (this) {
     DatingGoal.relationship => 'Someone to build something with',
     DatingGoal.casual => 'Fun, no pressure',
@@ -72,6 +80,15 @@ extension SpiceLevelTitle on SpiceLevel {
     SpiceLevel.playful => 'Playful',
     SpiceLevel.bold => 'Bold',
     SpiceLevel.spicy => 'Spicy',
+  };
+
+  /// Подпись под ползунком в профиле. В Figma есть только Warm, остальные — наши.
+  String get description => switch (this) {
+    SpiceLevel.soft => 'Sweet and friendly, no flirting',
+    SpiceLevel.warm => 'Kind, a little flirty',
+    SpiceLevel.playful => 'Teasing, clearly flirting',
+    SpiceLevel.bold => 'Confident, says what they want',
+    SpiceLevel.spicy => 'Daring, turns up the heat',
   };
 }
 

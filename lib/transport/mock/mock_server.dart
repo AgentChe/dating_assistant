@@ -1,6 +1,7 @@
 import 'package:dating_assistant/transport/api_request.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
+import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
 /// Фейковый сервер внутри приложения: находит обработчик под запрос.
@@ -10,7 +11,8 @@ import 'package:dating_assistant/transport/network_error.dart';
 class MockServer {
   MockServer(MockDatabase database)
     : _routes = {
-        // Маршруты доменов из transport/mock/routes, например: ...AnalysisMockRoutes(database).routes.
+        // Маршруты доменов из transport/mock/routes.
+        ...UsageMockRoutes(database).routes,
       };
 
   /// Маршруты вида `'GET /api/v1/analyses/:id'` → обработчик.

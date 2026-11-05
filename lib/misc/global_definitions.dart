@@ -28,4 +28,9 @@ abstract final class GlobalDefinitions {
 
   // TODO: вписать ссылку на политику конфиденциальности.
   static const privacyPolicyUrl = '';
+
+  /// Управление подписками в App Store — кнопка «Manage subscription» в профиле.
+  static const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
+
+  static const googlePlaySubscriptionsUrl = 'https://play.google.com/store/account/subscriptions';
 }

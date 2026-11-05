@@ -27,6 +27,8 @@ abstract final class AppImages {
 abstract final class AppIcons {
   static const chevronLeft = 'assets/icons/chevron_left.svg';
 
+  static const chevronRight = 'assets/icons/chevron_right.svg';
+
   static const check = 'assets/icons/check.svg';
 
   static const checkCircle = 'assets/icons/check_circle.svg';

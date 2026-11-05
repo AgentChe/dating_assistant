@@ -1,3 +1,4 @@
+import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/presentation/main/history/history_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_screen.dart';
 import 'package:dating_assistant/presentation/main/main/main_screen.dart';
@@ -6,8 +7,16 @@ import 'package:dating_assistant/presentation/main/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
+  // Вкладка Profile берёт менеджеры из Injector.
+  setUp(() async {
+    SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+    await Injector.configure();
+  });
+
   Future<void> openMainScreen(WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: MainScreen()));
     await tester.pumpAndSettle();
@@ -15,6 +24,8 @@ void main() {
 
   Future<void> tapTab(WidgetTester tester, String title) async {
     await tester.tap(find.descendant(of: find.byType(MainTabBar), matching: find.text(title)));
+    // Профиль загружает план с моков, у них задержка как у сети.
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
   }
 

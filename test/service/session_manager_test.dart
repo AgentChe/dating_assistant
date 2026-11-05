@@ -45,6 +45,55 @@ void main() {
     expect(await sessionManager.hasActiveSubscriptions(), isFalse);
   });
 
+  test('the active subscription is the valid one that ends last', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method != 'get_subscriptions') return null;
+      return [
+        {
+          'product_id': 'old',
+          'valid': false,
+          'expiration': '2026-08-01T10:00:00Z',
+          'status': 'paid',
+          'renewing': false,
+        },
+        {
+          'product_id': 'weekly',
+          'valid': true,
+          'expiration': '2026-09-23T10:00:00Z',
+          'status': 'trial',
+          'renewing': true,
+        },
+        {
+          'product_id': 'yearly',
+          'valid': true,
+          'expiration': '2026-09-20T10:00:00Z',
+          'status': 'paid',
+          'renewing': false,
+        },
+      ];
+    });
+    final sessionManager = SessionManager(host: 'https://otter.test', apiKey: 'key');
+
+    final subscription = (await sessionManager.activeSubscription())!;
+
+    expect(subscription.productId, 'weekly');
+    expect(subscription.expiresAt, DateTime.utc(2026, 9, 23, 10).toLocal());
+    expect(subscription.isTrial, isTrue);
+    expect(subscription.willRenew, isTrue);
+  });
+
+  test('without a valid subscription there is no active one', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method != 'get_subscriptions') return null;
+      return [
+        {'product_id': 'weekly', 'valid': false, 'expiration': 'not a date', 'status': 'refund', 'renewing': false},
+      ];
+    });
+
+    expect(await SessionManager(host: 'https://otter.test', apiKey: 'key').activeSubscription(), isNull);
+    expect(await SessionManager(host: 'https://otter.test', apiKey: '').activeSubscription(), isNull);
+  });
+
   test('a failing SDK does not break the app start', () async {
     messenger.setMockMethodCallHandler(channel, (call) async => throw PlatformException(code: 'initialization_failed'));
     final sessionManager = SessionManager(host: 'https://otter.test', apiKey: 'key');

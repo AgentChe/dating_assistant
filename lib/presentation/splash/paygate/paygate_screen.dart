@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/components/fade_page_route.dart';
+import 'package:dating_assistant/misc/custom_views/failure_toast.dart';
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/presentation/splash/paygate/paygate_view_model.dart';
-import 'package:dating_assistant/presentation/splash/paygate/views/failure_toast.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_bottom_bar.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_content.dart';
+import 'package:dating_assistant/presentation/splash/paygate/views/paygate_copy.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_top_bar.dart';
 import 'package:dating_assistant/presentation/splash/welcome_plus/welcome_plus_screen.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +93,11 @@ class _PaygateScreenState extends State<PaygateScreen> {
                     duration: const Duration(milliseconds: 250),
                     child: failure == null
                         ? const SizedBox.shrink()
-                        : FailureToast(key: ValueKey(failure), failure: failure, onTap: _viewModel.dismissFailure),
+                        : FailureToast(
+                            key: ValueKey(failure),
+                            message: PaygateCopy.failure(failure),
+                            onTap: _viewModel.dismissFailure,
+                          ),
                   ),
                 ),
               ],

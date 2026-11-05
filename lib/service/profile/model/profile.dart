@@ -45,6 +45,17 @@ class Profile {
   /// Острота сообщений по умолчанию («Default spice» в профиле).
   final SpiceLevel spice;
 
+  /// Копия с изменёнными ответами — так профиль правится на экране профиля.
+  Profile copyWith({DatingGoal? goal, Gender? gender, AgeRange? ageRange, SpiceLevel? spice}) => Profile(
+    name: name,
+    goal: goal ?? this.goal,
+    gender: gender ?? this.gender,
+    ageRange: ageRange ?? this.ageRange,
+    hardestParts: hardestParts,
+    voice: voice,
+    spice: spice ?? this.spice,
+  );
+
   Map<String, dynamic> toJson() => {
     'name': name,
     'goal': goal.name,

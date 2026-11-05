@@ -99,6 +99,9 @@ Rx не используем: `Future`, `Stream` и `ChangeNotifier` встро�
 SDK запускает `SessionManager.start()` на сплэше. Ключ приложения — `GlobalDefinitions.otterScaleApiKey`:
 пока он пустой, SDK не запускается, а приложение работает без него.
 
+Методы канала: `initialize`, `get_user_ids`, `has_active_subscription`, `get_subscriptions` (дата окончания,
+пробный период и автопродление — для карточки плана в профиле), на Android ещё `save_purchase`.
+
 ## Покупки
 
 Как в Swift-приложениях: `service/purchase/PurchaseManager` (≈ IAPManager + PaygateInteractor) покупает через
@@ -125,3 +128,9 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
 3. Обработчик — `transport/mock/routes/<домен>_mock_routes.dart`, зарегистрировать в `MockServer`.
 
 Формат ответов в моках — это контракт API: по нему потом напишем сервер.
+
+Эндпоинты:
+
+| Запрос             | Ответ                                       | Зачем                                              |
+|--------------------|---------------------------------------------|----------------------------------------------------|
+| `GET /api/v1/usage` | `{"generations": {"used": 2, "limit": 3}}` | бесплатные генерации на неделе — карточка плана в профиле |

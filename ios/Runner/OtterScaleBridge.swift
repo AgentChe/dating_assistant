@@ -54,6 +54,8 @@ private extension OtterScaleBridge {
             result(userIds())
         case "has_active_subscription":
             result(hasActiveSubscription())
+        case "get_subscriptions":
+            result(subscriptions())
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -103,5 +105,22 @@ private extension OtterScaleBridge {
             + paymentData.nonConsumables.paypal
 
         return subscriptions.contains(where: { $0.valid }) || nonConsumables.contains(where: { $0.valid })
+    }
+
+    /// Подписки со всех платформ — для карточки плана в профиле.
+    func subscriptions() -> [[String: Any]] {
+        guard let subscriptions = OtterScale.shared.getSubscriptions() else { return [] }
+
+        let products = subscriptions.appleAppStore + subscriptions.googlePlay + subscriptions.stripe + subscriptions.paypal
+
+        return products.map { product in
+            [
+                "product_id": product.productID,
+                "valid": product.valid,
+                "expiration": product.expiration,
+                "status": product.status.rawValue,
+                "renewing": product.renewing
+            ]
+        }
     }
 }

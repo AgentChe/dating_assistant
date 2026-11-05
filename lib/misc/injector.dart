@@ -2,6 +2,7 @@ import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/purchase/purchase_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
+import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
@@ -40,7 +41,9 @@ final class Injector {
 
   late final purchaseManager = PurchaseManager(sessionManager: sessionManager);
 
-  /// Транспорт к нашему серверу — для менеджеров следующих фич (анализ чата, коуч, первые сообщения).
+  late final usageManager = UsageManager(transport);
+
+  /// Транспорт к нашему серверу: моки или настоящий API.
   late final ApiTransport transport = GlobalDefinitions.useMocks
       ? MockApiTransport(server: MockServer(MockDatabase(_preferences)))
       : RestApiTransport(baseUrl: GlobalDefinitions.apiBaseUrl);
