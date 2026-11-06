@@ -9,6 +9,7 @@ import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/session/model/subscription.dart';
 import 'package:dating_assistant/service/usage/model/usage.dart';
+import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -34,6 +35,7 @@ void main() {
       sessionManager: sessionManager,
       purchaseManager: FakePurchaseManager(),
       usageManager: FakeUsageManager(usage: const Usage(used: 2, limit: 3)),
+      usageMediator: UsageMediator(),
       yearlyId: 'yearly',
       weeklyId: 'weekly',
     );

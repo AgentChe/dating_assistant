@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dating_assistant/misc/assets.dart';
+import 'package:dating_assistant/presentation/analysis/analyze_chat/analyze_chat_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_view_model.dart';
 import 'package:dating_assistant/presentation/main/home/views/analyze_banner.dart';
 import 'package:dating_assistant/presentation/main/home/views/feature_tile.dart';
@@ -90,8 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handle(HomeAction action) {
     switch (action) {
-      // TODO: открыть «Analyze your chat» — выбор скриншота или импорт чата (Figma 190:1643).
       case HomeAction.analyzeChat:
+        Navigator.of(context).push(AnalyzeChatScreen.route());
       // TODO: открыть чат с коучем из секции Dating advice (Figma 190:2058).
       case HomeAction.openDatingAdvice:
       // TODO: открыть генератор первой фразы из секции Opening line (Figma 190:1787).

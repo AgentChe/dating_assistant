@@ -11,13 +11,15 @@ import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/presentation/splash/paygate/paygate_view_model.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_copy.dart';
+import 'package:dating_assistant/presentation/splash/welcome_plus/welcome_plus_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Подписка, оформленная в шторке: пробный период нужен экрану «You’re in».
 typedef PlusPurchase = ({int? trialDays});
 
-/// Шторка Cue Plus из профиля («No more counting»): недельный тариф, покупка и восстановление.
+/// Шторка Cue Plus («No more counting»): недельный тариф, покупка и восстановление. Открывается из профиля
+/// и когда бесплатные генерации на неделе кончились.
 ///
 /// Логика та же, что у пейгейта, — общий PaygateViewModel, только тариф всегда недельный.
 class PlusSheet extends StatefulWidget {
@@ -26,6 +28,19 @@ class PlusSheet extends StatefulWidget {
   /// Завершается подпиской или null, если подписки не случилось.
   static Future<PlusPurchase?> show(BuildContext context) =>
       AppBottomSheet.show<PlusPurchase>(context, builder: (_) => const PlusSheet());
+
+  /// Шторка, а после покупки — экран «You’re in». Завершается true, как только подписка оформлена.
+  static Future<bool> present(BuildContext context) async {
+    final purchase = await show(context);
+    if (purchase == null || !context.mounted) return false;
+
+    unawaited(
+      Navigator.of(context, rootNavigator: true).push(
+        WelcomePlusScreen.route(trialDays: purchase.trialDays, onContinue: (context) => Navigator.of(context).pop()),
+      ),
+    );
+    return true;
+  }
 
   @override
   State<PlusSheet> createState() => _PlusSheetState();

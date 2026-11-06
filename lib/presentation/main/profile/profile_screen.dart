@@ -7,11 +7,10 @@ import 'package:dating_assistant/presentation/main/profile/profile_view_model.da
 import 'package:dating_assistant/presentation/main/profile/views/about_you_card.dart';
 import 'package:dating_assistant/presentation/main/profile/views/about_you_sheet.dart';
 import 'package:dating_assistant/presentation/main/profile/views/plan_section.dart';
-import 'package:dating_assistant/presentation/main/profile/views/plus_sheet.dart';
 import 'package:dating_assistant/presentation/main/profile/views/profile_section.dart';
 import 'package:dating_assistant/presentation/main/profile/views/spice_card.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_copy.dart';
-import 'package:dating_assistant/presentation/splash/welcome_plus/welcome_plus_screen.dart';
+import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -136,12 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         if (aboutYou != null) await _viewModel.updateAboutYou(aboutYou);
       case ProfileAction.openPlus:
-        final purchase = await PlusSheet.show(context);
-        if (purchase == null || !mounted) return;
-        unawaited(_viewModel.loadPlan());
-        await Navigator.of(context, rootNavigator: true).push(
-          WelcomePlusScreen.route(trialDays: purchase.trialDays, onContinue: (context) => Navigator.of(context).pop()),
-        );
+        if (await PlusSheet.present(context)) await _viewModel.loadPlan();
       case ProfileAction.openSubscriptions:
         final url = defaultTargetPlatform == TargetPlatform.iOS
             ? GlobalDefinitions.appStoreSubscriptionsUrl

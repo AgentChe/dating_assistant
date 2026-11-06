@@ -50,18 +50,13 @@ void main() {
   testWidgets('every entry point sends its action', (tester) async {
     await openHome(tester);
 
-    await tester.tap(find.text('Upload screenshot'));
+    // «Upload screenshot» открывает экран — его проверяет analysis_flow_test.
     await tester.tap(find.text('Dating advice'));
     await tester.tap(find.text('Opening line'));
     await tester.tap(find.byType(GlassButton));
     await tester.pump();
 
-    expect(actions, [
-      HomeAction.analyzeChat,
-      HomeAction.openDatingAdvice,
-      HomeAction.openOpeningLine,
-      HomeAction.openMenu,
-    ]);
+    expect(actions, [HomeAction.openDatingAdvice, HomeAction.openOpeningLine, HomeAction.openMenu]);
   });
 
   testWidgets('fits a small iPhone with a larger system font', (tester) async {

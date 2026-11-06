@@ -1,6 +1,7 @@
 import 'package:dating_assistant/transport/api_request.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
+import 'package:dating_assistant/transport/mock/routes/analysis_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
@@ -9,10 +10,12 @@ import 'package:dating_assistant/transport/network_error.dart';
 /// Обработчики работают с «сырым» JSON, как настоящий бэкенд, поэтому моки —
 /// это контракт API, по которому потом напишем сервер.
 class MockServer {
-  MockServer(MockDatabase database)
+  /// [generationTime] — сколько отвечает «нейросеть»; в тестах ноль.
+  MockServer(MockDatabase database, {Duration generationTime = const Duration(seconds: 3)})
     : _routes = {
         // Маршруты доменов из transport/mock/routes.
         ...UsageMockRoutes(database).routes,
+        ...AnalysisMockRoutes(database, generationTime: generationTime).routes,
       };
 
   /// Маршруты вида `'GET /api/v1/analyses/:id'` → обработчик.

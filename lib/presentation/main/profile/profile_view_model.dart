@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/misc/injector.dart';
@@ -14,6 +16,7 @@ import 'package:dating_assistant/service/session/model/subscription.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:dating_assistant/service/usage/model/usage.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
+import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter/foundation.dart';
 
 /// Ответы «About you», которые меняются в шторке.
@@ -50,6 +53,7 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
     SessionManager? sessionManager,
     PurchaseManager? purchaseManager,
     UsageManager? usageManager,
+    UsageMediator? usageMediator,
     this.yearlyId = GlobalDefinitions.paygateYearlyId,
     this.weeklyId = GlobalDefinitions.paygateWeeklyId,
   }) : _profileManager = profileManager ?? Injector.shared.profileManager,
@@ -57,6 +61,8 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
        _purchaseManager = purchaseManager ?? Injector.shared.purchaseManager,
        _usageManager = usageManager ?? Injector.shared.usageManager {
     _profile = _profileManager.profile;
+    // Вкладка живёт всё время: генерацию потратили на другом экране — обновляем счётчик.
+    _usageChanges = (usageMediator ?? Injector.shared.usageMediator).changes.listen((_) => loadPlan());
   }
 
   final String yearlyId;
@@ -70,6 +76,8 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
   final PurchaseManager _purchaseManager;
 
   final UsageManager _usageManager;
+
+  late final StreamSubscription<void> _usageChanges;
 
   Profile? _profile;
 
@@ -140,6 +148,12 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
   void dismissFailure() {
     _failure = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _usageChanges.cancel();
+    super.dispose();
   }
 
   Future<void> _update(Profile Function(Profile profile) change) async {

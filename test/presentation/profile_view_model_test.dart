@@ -9,6 +9,7 @@ import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/purchase/model/purchase_result.dart';
 import 'package:dating_assistant/service/session/model/subscription.dart';
 import 'package:dating_assistant/service/usage/model/usage.dart';
+import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_managers.dart';
@@ -19,12 +20,14 @@ void main() {
   late FakeSessionManager sessionManager;
   late FakePurchaseManager purchaseManager;
   late FakeUsageManager usageManager;
+  late UsageMediator usageMediator;
 
   ProfileViewModel makeViewModel() => ProfileViewModel(
     profileManager: profileManager,
     sessionManager: sessionManager,
     purchaseManager: purchaseManager,
     usageManager: usageManager,
+    usageMediator: usageMediator,
     yearlyId: 'yearly',
     weeklyId: 'weekly',
   );
@@ -34,6 +37,19 @@ void main() {
     sessionManager = FakeSessionManager();
     purchaseManager = FakePurchaseManager();
     usageManager = FakeUsageManager(usage: const Usage(used: 2, limit: 3));
+    usageMediator = UsageMediator();
+  });
+
+  test('the plan refreshes when a generation is spent on another screen', () async {
+    final viewModel = makeViewModel();
+    await viewModel.loadPlan();
+    expect((viewModel.plan as FreePlan).usage!.left, 1);
+
+    usageManager.usage = const Usage(used: 3, limit: 3);
+    usageMediator.notifyGenerationUsed();
+    await pumpEventQueue();
+
+    expect((viewModel.plan as FreePlan).usage!.left, 0);
   });
 
   test('shows the profile saved on onboarding', () {
