@@ -4,7 +4,11 @@ import 'package:dating_assistant/presentation/main/home/home_view_model.dart';
 import 'package:dating_assistant/presentation/main/home/views/analyze_banner.dart';
 import 'package:dating_assistant/presentation/main/home/views/feature_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../fakes/fake_analysis.dart';
+import '../fakes/fake_managers.dart';
 
 void main() {
   late HomeViewModel viewModel;
@@ -15,7 +19,13 @@ void main() {
       ..physicalSize = size * 3
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    viewModel = HomeViewModel(now: () => DateTime(2026, 11, 5, 20));
+    viewModel = HomeViewModel(
+      now: () => DateTime(2026, 11, 5, 20),
+      picker: FakeScreenshotPicker(),
+      sessionManager: FakeSessionManager(isPlus: false),
+      usageManager: FakeUsageManager(),
+      usageMediator: UsageMediator(),
+    );
     actions = [];
     viewModel.actions.listen(actions.add);
     await tester.pumpWidget(
@@ -50,13 +60,13 @@ void main() {
   testWidgets('every entry point sends its action', (tester) async {
     await openHome(tester);
 
-    // «Upload screenshot» открывает экран — его проверяет analysis_flow_test.
+    // «Upload screenshot» открывает галерею и сканирование — это проверяет analysis_flow_test.
     await tester.tap(find.text('Dating advice'));
     await tester.tap(find.text('Opening line'));
     await tester.tap(find.byType(GlassButton));
     await tester.pump();
 
-    expect(actions, [HomeAction.openDatingAdvice, HomeAction.openOpeningLine, HomeAction.openMenu]);
+    expect(actions, [isA<OpenDatingAdvice>(), isA<OpenOpeningLine>(), isA<OpenMenu>()]);
   });
 
   testWidgets('fits a small iPhone with a larger system font', (tester) async {

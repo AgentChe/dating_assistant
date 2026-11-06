@@ -3,7 +3,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/assets.dart';
-import 'package:dating_assistant/misc/custom_views/glass_button.dart';
 import 'package:dating_assistant/misc/custom_views/pill_chip.dart';
 import 'package:dating_assistant/misc/custom_views/primary_button.dart';
 import 'package:dating_assistant/misc/custom_views/screen_header.dart';
@@ -16,7 +15,7 @@ import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:flutter/material.dart';
 
 /// «Chat breakdown» (аналог ChatBreakdownViewController): что происходит в переписке и что написать дальше.
-/// Открывается во вкладке Main вместо «Analyze your chat», так что «назад» ведёт на главную.
+/// Открывается во вкладке Main поверх главной, таб-бар остаётся.
 class ChatBreakdownScreen extends StatefulWidget {
   const ChatBreakdownScreen({super.key, required this.breakdown});
 
@@ -169,11 +168,7 @@ class _ChatBreakdownScreenState extends State<ChatBreakdownScreen> {
             top: 0,
             left: 0,
             right: 0,
-            child: _TopBar(
-              title: _viewModel.title,
-              onBack: () => Navigator.of(context).maybePop(),
-              onShare: _viewModel.share,
-            ),
+            child: _TopBar(title: _viewModel.title, onBack: () => Navigator.of(context).maybePop()),
           ),
         ],
       ),
@@ -182,8 +177,6 @@ class _ChatBreakdownScreenState extends State<ChatBreakdownScreen> {
 
   void _handle(ChatBreakdownAction action) {
     switch (action) {
-      // TODO: решить, чем делиться: текстом разбора или картинкой карточек.
-      case ShareBreakdown():
       // TODO: открыть первую фразу на эту тему — фича Opening line (Figma 190:1787).
       case OpenTopicLine():
       // TODO: открыть коуча с этой перепиской — фича Dating advice (Figma 190:2058).
@@ -216,9 +209,10 @@ class _Heading extends StatelessWidget {
   }
 }
 
-/// Шапка поверх разбора: затемнение с размытием, «назад», имя и «поделиться».
+/// Шапка поверх разбора: затемнение с размытием, «назад» и имя. Кнопку «поделиться» из макета убрали:
+/// пока непонятно, чем делиться.
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.title, required this.onBack, required this.onShare});
+  const _TopBar({required this.title, required this.onBack});
 
   /// Без отступа сверху: 11 + шапка 48 + 12.
   static const height = 71.0;
@@ -226,8 +220,6 @@ class _TopBar extends StatelessWidget {
   final String title;
 
   final VoidCallback onBack;
-
-  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -255,11 +247,7 @@ class _TopBar extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 11, 16, 12),
-            child: ScreenHeader(
-              title: title,
-              onBack: onBack,
-              trailing: GlassButton(icon: AppIcons.share, onPressed: onShare, semanticLabel: 'Share'),
-            ),
+            child: ScreenHeader(title: title, onBack: onBack),
           ),
         ),
       ],

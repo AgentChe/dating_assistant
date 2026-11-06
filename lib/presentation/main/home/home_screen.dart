@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:dating_assistant/misc/assets.dart';
-import 'package:dating_assistant/presentation/analysis/analyze_chat/analyze_chat_screen.dart';
+import 'package:dating_assistant/presentation/analysis/analyzing/analyzing_screen.dart';
+import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_view_model.dart';
 import 'package:dating_assistant/presentation/main/home/views/analyze_banner.dart';
 import 'package:dating_assistant/presentation/main/home/views/feature_tile.dart';
 import 'package:dating_assistant/presentation/main/home/views/home_header.dart';
+import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:flutter/material.dart';
 
 /// Вкладка «Main» (аналог HomeViewController): приветствие, разбор переписки, советы коуча и первая фраза.
@@ -30,7 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _actions = _viewModel.actions.listen(_handle);
-    _lifecycle = AppLifecycleListener(onResume: _viewModel.refreshGreeting);
+    _lifecycle = AppLifecycleListener(onResume: _viewModel.refresh);
+    _viewModel.loadUsage();
   }
 
   @override
@@ -56,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, _) => HomeHeader(greeting: _viewModel.greeting, onMenu: _viewModel.openMenu),
             ),
             const SizedBox(height: 32),
-            AnalyzeBanner(onUpload: _viewModel.analyzeChat),
+            AnalyzeBanner(onUpload: _viewModel.uploadScreenshot),
             const SizedBox(height: 20),
             // Плитки одной высоты, даже если подпись одной из них переносится на лишнюю строку.
             IntrinsicHeight(
@@ -89,17 +92,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _handle(HomeAction action) {
+  Future<void> _handle(HomeAction action) async {
     switch (action) {
-      case HomeAction.analyzeChat:
-        Navigator.of(context).push(AnalyzeChatScreen.route());
+      case AnalyzeScreenshot(:final screenshot):
+        // Разбор открывается во вкладке, пока сканирование ещё закрывает всё сверху, — и проявляется под ним.
+        final navigator = Navigator.of(context);
+        final outcome = await Navigator.of(context, rootNavigator: true).push(
+          AnalyzingScreen.route(
+            screenshot: screenshot,
+            onFinished: (breakdown) => navigator.push(ChatBreakdownScreen.route(breakdown, isAnimated: false)),
+          ),
+        );
+        if (outcome == AnalyzingOutcome.limitReached && mounted) {
+          _viewModel.didReachLimit();
+          await _openPlus();
+        }
+      case OpenPlus():
+        await _openPlus();
       // TODO: открыть чат с коучем из секции Dating advice (Figma 190:2058).
-      case HomeAction.openDatingAdvice:
+      case OpenDatingAdvice():
       // TODO: открыть генератор первой фразы из секции Opening line (Figma 190:1787).
-      case HomeAction.openOpeningLine:
+      case OpenOpeningLine():
       // TODO: что открывает меню, в макете пока не нарисовано.
-      case HomeAction.openMenu:
+      case OpenMenu():
         debugPrint('HomeScreen: $action is not implemented yet');
     }
+  }
+
+  Future<void> _openPlus() async {
+    if (await PlusSheet.present(context)) _viewModel.didSubscribe();
   }
 }

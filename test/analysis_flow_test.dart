@@ -1,5 +1,4 @@
 import 'package:dating_assistant/misc/injector.dart';
-import 'package:dating_assistant/presentation/analysis/analyze_chat/analyze_chat_screen.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_screen.dart';
 import 'package:dating_assistant/presentation/main/main/main_screen.dart';
@@ -39,15 +38,6 @@ void main() {
     await Injector.configure();
   });
 
-  Future<void> openMain(WidgetTester tester) async {
-    tester.view
-      ..physicalSize = const Size(1284, 2778)
-      ..devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(const MaterialApp(home: MainScreen()));
-    await tester.pumpAndSettle();
-  }
-
   /// Ждём моки: задержку сети и «нейросеть», потом анимации. Первый кадр строит экран,
   /// который отправляет запросы, — иначе их таймеры появятся уже после ожидания.
   Future<void> waitForServer(WidgetTester tester) async {
@@ -56,12 +46,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> openMain(WidgetTester tester) async {
+    tester.view
+      ..physicalSize = const Size(1284, 2778)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const MaterialApp(home: MainScreen()));
+    await waitForServer(tester);
+  }
+
+  /// «Upload screenshot» сразу открывает галерею, выбранный скриншот уходит на сканирование.
   Future<void> analyzeScreenshot(WidgetTester tester) async {
     await tester.tap(find.text('Upload screenshot'));
-    await waitForServer(tester);
-    expect(find.byType(AnalyzeChatScreen), findsOneWidget);
-
-    await tester.tap(find.text('Choose from photos'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Analyzing'), findsOneWidget);
@@ -82,11 +78,10 @@ void main() {
     expect(find.text('Nika is into this'), findsOneWidget);
     expect(find.byType(MainTabBar), findsOneWidget);
 
-    // «Analyze your chat» заменён разбором: назад — сразу на главную.
     await tester.tap(find.bySemanticsLabel('Back'));
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(AnalyzeChatScreen), findsNothing);
+    expect(find.byType(ChatBreakdownScreen), findsNothing);
 
     // Профиль уже знает про потраченную генерацию.
     await tester.tap(find.descendant(of: find.byType(MainTabBar), matching: find.text('Profile')));
@@ -104,8 +99,6 @@ void main() {
     expect(picker.picks, 3);
 
     await tester.tap(find.text('Upload screenshot'));
-    await waitForServer(tester);
-    await tester.tap(find.text('Choose from photos'));
     await waitForServer(tester);
 
     expect(picker.picks, 3);

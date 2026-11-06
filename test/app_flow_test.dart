@@ -85,6 +85,8 @@ void main() {
 
     expect(find.byType(MainTabBar), findsOneWidget);
     expect(find.byType(HomeScreen), findsOneWidget);
+    // Главная узнаёт лимит генераций с моков, у них задержка как у сети.
+    await tester.pump(const Duration(seconds: 1));
     final profile = Injector.shared.profileManager.profile!;
     expect(profile.name, 'Alex');
     expect(profile.voice.traits, {VoiceTrait.lowercase, VoiceTrait.direct});

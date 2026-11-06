@@ -5,10 +5,6 @@ sealed class ChatBreakdownAction {
   const ChatBreakdownAction();
 }
 
-final class ShareBreakdown extends ChatBreakdownAction {
-  const ShareBreakdown();
-}
-
 /// Тема из переписки — нужна первая фраза о ней.
 final class OpenTopicLine extends ChatBreakdownAction {
   const OpenTopicLine(this.topic);
@@ -32,8 +28,6 @@ class ChatBreakdownViewModel extends ViewModel<ChatBreakdownAction> {
     final (:name, :age) = breakdown.partner;
     return age == null ? name : '$name, $age';
   }
-
-  void share() => emit(const ShareBreakdown());
 
   void openTopic(ChatTopic topic) => emit(OpenTopicLine(topic));
 

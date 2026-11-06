@@ -20,6 +20,8 @@ void main() {
   Future<void> openMainScreen(WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: MainScreen()));
     await tester.pumpAndSettle();
+    // Главная узнаёт лимит генераций с моков, у них задержка как у сети.
+    await tester.pump(const Duration(seconds: 1));
   }
 
   Future<void> tapTab(WidgetTester tester, String title) async {

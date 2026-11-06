@@ -22,18 +22,10 @@ abstract final class AppImages {
 
   static const bars3d = 'assets/images/icons_3d/bars.png';
 
-  /// Галерея и график в кадре 48×48, как в карточках «Analyze your chat»: у героев онбординга другой отступ.
-  static const galleryTile3d = 'assets/images/icons_3d/gallery_tile.png';
-
-  static const barsTile3d = 'assets/images/icons_3d/bars_tile.png';
-
   /// Иллюстрация баннера «Analyze your chat»: анкета Nika и чат с ней, уже с наклоном.
   static const analyzeProfileCard = 'assets/images/home/analyze_profile_card.png';
 
   static const analyzeChatCard = 'assets/images/home/analyze_chat_card.png';
-
-  /// Размытые пузыри сообщений на карточке «Import the whole chat».
-  static const importBubbles = 'assets/images/analysis/import_bubbles.png';
 }
 
 /// Векторные иконки из assets/icons (SVG из Figma).
@@ -51,8 +43,6 @@ abstract final class AppIcons {
   static const copy = 'assets/icons/copy.svg';
 
   static const menu = 'assets/icons/menu.svg';
-
-  static const share = 'assets/icons/share.svg';
 
   /// Стрелка вверх по графику; вниз — она же, отражённая.
   static const trendUp = 'assets/icons/trend_up.svg';

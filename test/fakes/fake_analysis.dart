@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
@@ -26,6 +27,19 @@ Future<AnalysisManager> mockAnalysisManager({UsageMediator? usageMediator}) asyn
 
 /// Разбор переписки с Nika из макета.
 Future<ChatBreakdown> exampleBreakdown() async => (await mockAnalysisManager()).analyzeScreenshot(fakeScreenshot);
+
+/// Галерея без системного пикера: «выбирает» [screenshot], null — пользователь закрыл галерею.
+class FakeScreenshotPicker implements ScreenshotPicker {
+  Uint8List? screenshot = fakeScreenshot;
+
+  var picks = 0;
+
+  @override
+  Future<Uint8List?> pick() async {
+    picks++;
+    return screenshot;
+  }
+}
 
 /// Разбор без сервера: отдаёт или бросает то, что задано в тесте, по очереди.
 class FakeAnalysisManager implements AnalysisManager {
