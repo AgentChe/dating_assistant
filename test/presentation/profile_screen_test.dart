@@ -1,7 +1,7 @@
 import 'package:dating_assistant/misc/custom_views/pill_chip.dart';
 import 'package:dating_assistant/presentation/main/profile/profile_screen.dart';
 import 'package:dating_assistant/presentation/main/profile/profile_view_model.dart';
-import 'package:dating_assistant/presentation/main/profile/views/spice_card.dart';
+import 'package:dating_assistant/misc/custom_views/spice_card.dart';
 import 'package:dating_assistant/service/profile/model/age_range.dart';
 import 'package:dating_assistant/service/profile/model/dating_goal.dart';
 import 'package:dating_assistant/service/profile/model/gender.dart';

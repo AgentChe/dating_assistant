@@ -1,54 +1,50 @@
 import 'package:dating_assistant/misc/components/view_model.dart';
-import 'package:dating_assistant/misc/injector.dart';
-import 'package:dating_assistant/service/analysis/analysis_manager.dart';
-import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:flutter/foundation.dart';
 
-sealed class AnalyzingAction {
+sealed class AnalyzingAction<T> {
   const AnalyzingAction();
 }
 
-final class AnalysisFinished extends AnalyzingAction {
-  const AnalysisFinished(this.breakdown);
+final class AnalysisFinished<T> extends AnalyzingAction<T> {
+  const AnalysisFinished(this.result);
 
-  final ChatBreakdown breakdown;
+  final T result;
 }
 
 /// Бесплатные генерации на этой неделе кончились.
-final class AnalysisLimitReached extends AnalyzingAction {
+final class AnalysisLimitReached<T> extends AnalyzingAction<T> {
   const AnalysisLimitReached();
 }
 
 /// Ошибка, и пользователь не стал повторять.
-final class AnalysisCancelled extends AnalyzingAction {
+final class AnalysisCancelled<T> extends AnalyzingAction<T> {
   const AnalysisCancelled();
 }
 
-/// Сканирование скриншота: отправляет его на разбор и ждёт ответа нейросети.
-class AnalyzingViewModel extends ViewModel<AnalyzingAction> {
-  AnalyzingViewModel({required this.screenshot, AnalysisManager? analysisManager})
-    : _analysisManager = analysisManager ?? Injector.shared.analysisManager;
+/// Сканирование скриншота: ждёт, пока нейросеть разберёт переписку или прочитает анкету.
+class AnalyzingViewModel<T> extends ViewModel<AnalyzingAction<T>> {
+  AnalyzingViewModel({required this.task});
 
-  final Uint8List screenshot;
-
-  final AnalysisManager _analysisManager;
+  /// Запрос к нейросети по скриншоту.
+  final Future<T> Function() task;
 
   var _isFinished = false;
 
-  /// Разбор готов — прогресс добегает до 100%.
+  /// Ответ готов — прогресс добегает до 100%.
   bool get isFinished => _isFinished;
 
   /// При ошибке спрашивает [tryAgain] и повторяет; лимит генераций не повторяем.
   Future<void> analyze() async {
     while (true) {
       try {
-        final breakdown = await _analysisManager.analyzeScreenshot(screenshot);
+        final result = await task();
         _isFinished = true;
         notifyListeners();
-        emit(AnalysisFinished(breakdown));
+        emit(AnalysisFinished(result));
         return;
       } catch (error) {
-        if (AnalysisManager.isGenerationLimit(error)) {
+        if (UsageManager.isGenerationLimit(error)) {
           emit(const AnalysisLimitReached());
           return;
         }

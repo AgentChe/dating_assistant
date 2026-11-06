@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +50,7 @@ void main() {
     await pumpEventQueue();
 
     expect(error, isA<NetworkError>().having((error) => error.statusCode, 'status', 402));
-    expect(AnalysisManager.isGenerationLimit(error!), isTrue);
+    expect(UsageManager.isGenerationLimit(error!), isTrue);
     expect(generationsUsed, 3);
   });
 

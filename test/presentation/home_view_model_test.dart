@@ -17,6 +17,7 @@ void main() {
     final viewModel = HomeViewModel(
       now: now,
       picker: picker,
+      analysisManager: FakeAnalysisManager([]),
       sessionManager: sessionManager,
       usageManager: usageManager,
       usageMediator: usageMediator,

@@ -22,9 +22,12 @@ class PrimaryButton extends StatelessWidget {
   const PrimaryButton.plain({super.key, required this.title, required this.onPressed, this.isLoading = false})
     : _kind = _Kind.plain;
 
+  /// Текст недоступной кнопки — белый 28%, как в State=Disabled компонента.
+  static const _disabledForeground = Color(0x47FFFFFF);
+
   final String title;
 
-  /// null — кнопка недоступна и полупрозрачна.
+  /// null — кнопка недоступна: приглушённый фон и текст, как в Figma.
   final VoidCallback? onPressed;
 
   /// Спиннер вместо текста; кнопка не нажимается, но остаётся яркой.
@@ -34,29 +37,31 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (height, background, foreground) = switch (_kind) {
-      _Kind.accent => (52.0, Appearance.accent, Appearance.black),
-      _Kind.dark => (52.0, Appearance.black, Appearance.white),
-      _Kind.secondary => (48.0, const Color(0x1FFFFFFF), Appearance.white),
-      _Kind.plain => (44.0, null, Appearance.grey),
+    final isEnabled = onPressed != null || isLoading;
+    final (height, background, foreground) = switch ((_kind, isEnabled)) {
+      (_Kind.accent, true) => (52.0, Appearance.accent, Appearance.black),
+      (_Kind.accent, false) => (52.0, const Color(0x1FFFFFFF), _disabledForeground),
+      (_Kind.dark, true) => (52.0, Appearance.black, Appearance.white),
+      (_Kind.dark, false) => (52.0, const Color(0x66000000), const Color(0x66FFFFFF)),
+      (_Kind.secondary, true) => (48.0, const Color(0x1FFFFFFF), Appearance.white),
+      (_Kind.secondary, false) => (48.0, const Color(0x0FFFFFFF), _disabledForeground),
+      (_Kind.plain, true) => (44.0, null, Appearance.grey),
+      (_Kind.plain, false) => (44.0, null, _disabledForeground),
     };
     final style = Fonts.button.copyWith(
       color: foreground,
       fontWeight: _kind == _Kind.dark ? FontWeight.w700 : null,
     );
-    return AnimatedOpacity(
-      opacity: onPressed == null && !isLoading ? 0.4 : 1,
-      duration: const Duration(milliseconds: 200),
-      child: Pressable(
-        onTap: isLoading ? null : onPressed,
-        child: Container(
-          width: double.infinity,
-          height: height,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: ShapeDecoration(shape: const StadiumBorder(), color: background),
-          child: isLoading ? CupertinoActivityIndicator(color: foreground, radius: 10) : Text(title, style: style),
-        ),
+    return Pressable(
+      onTap: isLoading ? null : onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: height,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: ShapeDecoration(shape: const StadiumBorder(), color: background),
+        child: isLoading ? CupertinoActivityIndicator(color: foreground, radius: 10) : Text(title, style: style),
       ),
     );
   }

@@ -7,43 +7,52 @@ import 'package:dating_assistant/misc/custom_views/try_again_sheet.dart';
 import 'package:dating_assistant/presentation/analysis/analyzing/analyzing_view_model.dart';
 import 'package:dating_assistant/presentation/analysis/analyzing/views/scanning_progress.dart';
 import 'package:dating_assistant/presentation/analysis/analyzing/views/scanning_screenshot.dart';
-import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:flutter/material.dart';
 
 /// Чем закончилось сканирование; null — пользователь ушёл назад.
 enum AnalyzingOutcome { finished, limitReached }
 
-/// «Analyzing» (аналог AnalyzingViewController): скриншот сканируется, пока нейросеть разбирает переписку.
-/// Открывается поверх таб-бара, на его месте — прогресс.
-class AnalyzingScreen extends StatefulWidget {
-  const AnalyzingScreen({super.key, required this.screenshot, required this.onFinished, this.viewModel});
+/// «Analyzing» (аналог AnalyzingViewController): скриншот сканируется, пока нейросеть с ним работает —
+/// разбирает переписку или читает анкету для первой фразы. Открывается поверх таб-бара, на его месте — прогресс.
+class AnalyzingScreen<T> extends StatefulWidget {
+  const AnalyzingScreen({
+    super.key,
+    required this.screenshot,
+    required this.task,
+    required this.onFinished,
+    this.viewModel,
+  });
 
-  static Route<AnalyzingOutcome> route({
+  static Route<AnalyzingOutcome> route<T>({
     required Uint8List screenshot,
-    required void Function(ChatBreakdown breakdown) onFinished,
+    required Future<T> Function() task,
+    required void Function(T result) onFinished,
   }) => FadePageRoute(
-    builder: (_) => AnalyzingScreen(screenshot: screenshot, onFinished: onFinished),
+    builder: (_) => AnalyzingScreen<T>(screenshot: screenshot, task: task, onFinished: onFinished),
   );
 
   final Uint8List screenshot;
 
-  /// Разбор готов. Вызывается до того, как сканирование закроется, — чтобы под ним уже был разбор.
-  final void Function(ChatBreakdown breakdown) onFinished;
+  /// Запрос к нейросети по скриншоту.
+  final Future<T> Function() task;
+
+  /// Ответ готов. Вызывается до того, как сканирование закроется, — чтобы под ним уже был следующий экран.
+  final void Function(T result) onFinished;
 
   /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final AnalyzingViewModel? viewModel;
+  final AnalyzingViewModel<T>? viewModel;
 
   @override
-  State<AnalyzingScreen> createState() => _AnalyzingScreenState();
+  State<AnalyzingScreen<T>> createState() => _AnalyzingScreenState<T>();
 }
 
-class _AnalyzingScreenState extends State<AnalyzingScreen> with SingleTickerProviderStateMixin {
-  late final _viewModel = widget.viewModel ?? AnalyzingViewModel(screenshot: widget.screenshot);
+class _AnalyzingScreenState<T> extends State<AnalyzingScreen<T>> with SingleTickerProviderStateMixin {
+  late final _viewModel = widget.viewModel ?? AnalyzingViewModel<T>(task: widget.task);
 
-  late final StreamSubscription<AnalyzingAction> _actions;
+  late final StreamSubscription<AnalyzingAction<T>> _actions;
 
   /// Сколько времени ждать ответа, никто не знает: прогресс замедляется и ждёт у 90%,
-  /// а когда разбор готов, добегает до конца.
+  /// а когда ответ готов, добегает до конца.
   late final _progress = AnimationController(vsync: this, duration: const Duration(seconds: 12));
 
   @override
@@ -92,14 +101,14 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> with SingleTickerProv
     );
   }
 
-  Future<void> _handle(AnalyzingAction action) async {
+  Future<void> _handle(AnalyzingAction<T> action) async {
     switch (action) {
-      case AnalysisFinished(:final breakdown):
+      case AnalysisFinished(:final result):
         await _progress.animateTo(1, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
         // Пусть «100%» побудет на экране.
         await Future<void>.delayed(const Duration(milliseconds: 300));
         if (!mounted) return;
-        widget.onFinished(breakdown);
+        widget.onFinished(result);
         Navigator.of(context).pop(AnalyzingOutcome.finished);
       case AnalysisLimitReached():
         Navigator.of(context).pop(AnalyzingOutcome.limitReached);

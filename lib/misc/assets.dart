@@ -22,6 +22,19 @@ abstract final class AppImages {
 
   static const bars3d = 'assets/images/icons_3d/bars.png';
 
+  /// 3D-иконки в кадре 48×48 для карточек выбора: у героев онбординга другой отступ.
+  static const galleryTile3d = 'assets/images/icons_3d/gallery_tile.png';
+
+  static const keyboardTile3d = 'assets/images/icons_3d/keyboard_tile.png';
+
+  static const sparkleTile3d = 'assets/images/icons_3d/sparkle_tile.png';
+
+  /// Размытые анкеты на карточке «Upload their bio».
+  static const bioCards = 'assets/images/opening_line/bio_cards.png';
+
+  /// Размытые пузыри сообщений на карточке «Type it out».
+  static const messageBubbles = 'assets/images/opening_line/bubbles.png';
+
   /// Иллюстрация баннера «Analyze your chat»: анкета Nika и чат с ней, уже с наклоном.
   static const analyzeProfileCard = 'assets/images/home/analyze_profile_card.png';
 

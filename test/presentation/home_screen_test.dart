@@ -22,6 +22,7 @@ void main() {
     viewModel = HomeViewModel(
       now: () => DateTime(2026, 11, 5, 20),
       picker: FakeScreenshotPicker(),
+      analysisManager: FakeAnalysisManager([]),
       sessionManager: FakeSessionManager(isPlus: false),
       usageManager: FakeUsageManager(),
       usageMediator: UsageMediator(),
@@ -60,13 +61,13 @@ void main() {
   testWidgets('every entry point sends its action', (tester) async {
     await openHome(tester);
 
-    // «Upload screenshot» открывает галерею и сканирование — это проверяет analysis_flow_test.
+    // «Upload screenshot» и «Opening line» открывают экраны — это проверяют analysis_flow_test
+    // и opening_line_flow_test.
     await tester.tap(find.text('Dating advice'));
-    await tester.tap(find.text('Opening line'));
     await tester.tap(find.byType(GlassButton));
     await tester.pump();
 
-    expect(actions, [isA<OpenDatingAdvice>(), isA<OpenOpeningLine>(), isA<OpenMenu>()]);
+    expect(actions, [isA<OpenDatingAdvice>(), isA<OpenMenu>()]);
   });
 
   testWidgets('fits a small iPhone with a larger system font', (tester) async {

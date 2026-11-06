@@ -7,12 +7,13 @@ import '../fakes/fake_analysis.dart';
 
 void main() {
   late ChatBreakdown breakdown;
-  late List<AnalyzingAction> actions;
+  late List<AnalyzingAction<ChatBreakdown>> actions;
 
   setUpAll(() async => breakdown = await exampleBreakdown());
 
-  AnalyzingViewModel makeViewModel(List<Object> results) {
-    final viewModel = AnalyzingViewModel(screenshot: fakeScreenshot, analysisManager: FakeAnalysisManager(results));
+  AnalyzingViewModel<ChatBreakdown> makeViewModel(List<Object> results) {
+    final manager = FakeAnalysisManager(results);
+    final viewModel = AnalyzingViewModel<ChatBreakdown>(task: () => manager.analyzeScreenshot(fakeScreenshot));
     actions = [];
     viewModel.actions.listen(actions.add);
     return viewModel;
@@ -25,7 +26,10 @@ void main() {
     await pumpEventQueue();
 
     expect(viewModel.isFinished, isTrue);
-    expect(actions.single, isA<AnalysisFinished>().having((action) => action.breakdown, 'breakdown', breakdown));
+    expect(
+      actions.single,
+      isA<AnalysisFinished<ChatBreakdown>>().having((action) => action.result, 'result', breakdown),
+    );
   });
 
   test('the generation limit is not retried', () async {
@@ -40,7 +44,7 @@ void main() {
     await pumpEventQueue();
 
     expect(questions, 0);
-    expect(actions.single, isA<AnalysisLimitReached>());
+    expect(actions.single, isA<AnalysisLimitReached<ChatBreakdown>>());
   });
 
   test('a network error is retried while the user asks to', () async {
@@ -50,7 +54,7 @@ void main() {
     await viewModel.analyze();
     await pumpEventQueue();
 
-    expect(actions.single, isA<AnalysisFinished>());
+    expect(actions.single, isA<AnalysisFinished<ChatBreakdown>>());
   });
 
   test('declining to retry cancels the analysis', () async {
@@ -61,6 +65,6 @@ void main() {
     await pumpEventQueue();
 
     expect(viewModel.isFinished, isFalse);
-    expect(actions.single, isA<AnalysisCancelled>());
+    expect(actions.single, isA<AnalysisCancelled<ChatBreakdown>>());
   });
 }

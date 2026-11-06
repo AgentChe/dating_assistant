@@ -36,6 +36,7 @@ flutter:
     - assets/images/home/
     - assets/images/icons_3d/
     - assets/images/onboarding/
+    - assets/images/opening_line/
     - assets/images/splash/
 
   fonts:

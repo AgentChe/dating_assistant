@@ -7,6 +7,8 @@ import 'package:dating_assistant/presentation/main/home/home_view_model.dart';
 import 'package:dating_assistant/presentation/main/home/views/analyze_banner.dart';
 import 'package:dating_assistant/presentation/main/home/views/feature_tile.dart';
 import 'package:dating_assistant/presentation/main/home/views/home_header.dart';
+import 'package:dating_assistant/presentation/opening_line/opening_line_source/opening_line_source_screen.dart';
+import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:flutter/material.dart';
 
@@ -98,8 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
         // Разбор открывается во вкладке, пока сканирование ещё закрывает всё сверху, — и проявляется под ним.
         final navigator = Navigator.of(context);
         final outcome = await Navigator.of(context, rootNavigator: true).push(
-          AnalyzingScreen.route(
+          AnalyzingScreen.route<ChatBreakdown>(
             screenshot: screenshot,
+            task: () => _viewModel.analyze(screenshot),
             onFinished: (breakdown) => navigator.push(ChatBreakdownScreen.route(breakdown, isAnimated: false)),
           ),
         );
@@ -109,10 +112,10 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       case OpenPlus():
         await _openPlus();
+      case OpenOpeningLine():
+        await Navigator.of(context).push(OpeningLineSourceScreen.route());
       // TODO: открыть чат с коучем из секции Dating advice (Figma 190:2058).
       case OpenDatingAdvice():
-      // TODO: открыть генератор первой фразы из секции Opening line (Figma 190:1787).
-      case OpenOpeningLine():
       // TODO: что открывает меню, в макете пока не нарисовано.
       case OpenMenu():
         debugPrint('HomeScreen: $action is not implemented yet');

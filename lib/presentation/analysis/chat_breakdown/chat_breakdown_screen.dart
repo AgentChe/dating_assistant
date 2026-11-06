@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/assets.dart';
+import 'package:dating_assistant/misc/components/instant_page_route.dart';
 import 'package:dating_assistant/misc/custom_views/pill_chip.dart';
 import 'package:dating_assistant/misc/custom_views/primary_button.dart';
 import 'package:dating_assistant/misc/custom_views/screen_header.dart';
@@ -11,7 +12,9 @@ import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_view_model.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/views/breakdown_card.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/views/read_card.dart';
+import 'package:dating_assistant/presentation/opening_line/opening_line/opening_line_screen.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:flutter/material.dart';
 
 /// «Chat breakdown» (аналог ChatBreakdownViewController): что происходит в переписке и что написать дальше.
@@ -22,7 +25,7 @@ class ChatBreakdownScreen extends StatefulWidget {
   /// [isAnimated] false — экран появляется под сканированием, которое потом растворяется.
   static Route<void> route(ChatBreakdown breakdown, {bool isAnimated = true}) => isAnimated
       ? MaterialPageRoute(builder: (_) => ChatBreakdownScreen(breakdown: breakdown))
-      : _InstantPageRoute(builder: (_) => ChatBreakdownScreen(breakdown: breakdown));
+      : InstantPageRoute(builder: (_) => ChatBreakdownScreen(breakdown: breakdown));
 
   final ChatBreakdown breakdown;
 
@@ -177,8 +180,14 @@ class _ChatBreakdownScreenState extends State<ChatBreakdownScreen> {
 
   void _handle(ChatBreakdownAction action) {
     switch (action) {
-      // TODO: открыть первую фразу на эту тему — фича Opening line (Figma 190:1787).
-      case OpenTopicLine():
+      case OpenTopicLine(:final topic):
+        // Первая фраза на тему из переписки — тот же экран, что у Opening line.
+        final partner = _viewModel.breakdown.partner;
+        Navigator.of(context).push(
+          OpeningLineScreen.route(
+            match: MatchDetails(name: partner.name, age: partner.age, interests: topic.title),
+          ),
+        );
       // TODO: открыть коуча с этой перепиской — фича Dating advice (Figma 190:2058).
       case OpenCoach():
         debugPrint('ChatBreakdownScreen: $action is not implemented yet');
@@ -255,15 +264,4 @@ class _TopBar extends StatelessWidget {
   }
 
   static final _blur = ImageFilter.blur(sigmaX: 8, sigmaY: 8);
-}
-
-/// Появляется без анимации, а уходит как обычный экран — со свайпом назад на iOS.
-class _InstantPageRoute<T> extends MaterialPageRoute<T> {
-  _InstantPageRoute({required super.builder});
-
-  @override
-  Duration get transitionDuration => Duration.zero;
-
-  @override
-  Duration get reverseTransitionDuration => super.transitionDuration;
 }

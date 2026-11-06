@@ -1,12 +1,11 @@
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/extensions/profile_titles.dart';
 import 'package:dating_assistant/misc/fonts.dart';
-import 'package:dating_assistant/presentation/main/profile/views/profile_section.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// Карточка «Default spice»: ползунок от Soft до Spicy и подпись выбранной ступени.
+/// Карточка остроты: ползунок от Soft до Spicy и подпись выбранной ступени — в профиле и у первой фразы.
 class SpiceCard extends StatelessWidget {
   const SpiceCard({super.key, required this.spice, required this.onChanged});
 
@@ -17,9 +16,10 @@ class SpiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final endStyle = Fonts.button.copyWith(height: 20 / 16);
-    return ProfileCard(
+    return Container(
       // Сверху 8, а не 20 из Figma: ряд с ползунком выше на 24 ради удобного касания, отступы те же.
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      decoration: BoxDecoration(color: Appearance.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           Row(

@@ -1,9 +1,10 @@
-import 'dart:async';
-
 import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
+import 'package:dating_assistant/service/analysis/analysis_manager.dart';
+import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
+import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter/foundation.dart';
@@ -42,29 +43,26 @@ class HomeViewModel extends ViewModel<HomeAction> {
   HomeViewModel({
     DateTime Function()? now,
     ScreenshotPicker? picker,
+    AnalysisManager? analysisManager,
     SessionManager? sessionManager,
     UsageManager? usageManager,
     UsageMediator? usageMediator,
   }) : _now = now ?? DateTime.now,
        _picker = picker ?? ScreenshotPicker(),
-       _sessionManager = sessionManager ?? Injector.shared.sessionManager,
-       _usageManager = usageManager ?? Injector.shared.usageManager {
-    // Генерацию потратили — к следующему нажатию лимит уже известен.
-    _usageChanges = (usageMediator ?? Injector.shared.usageMediator).changes.listen((_) => loadUsage());
-  }
+       _analysisManager = analysisManager ?? Injector.shared.analysisManager,
+       _limit = GenerationLimit(
+         sessionManager: sessionManager,
+         usageManager: usageManager,
+         usageMediator: usageMediator,
+       );
 
   final DateTime Function() _now;
 
   final ScreenshotPicker _picker;
 
-  final SessionManager _sessionManager;
+  final AnalysisManager _analysisManager;
 
-  final UsageManager _usageManager;
-
-  late final StreamSubscription<void> _usageChanges;
-
-  /// null — ещё не знаем; тогда лимит проверит сервер.
-  bool? _isOutOfGenerations;
+  final GenerationLimit _limit;
 
   var _isPicking = false;
 
@@ -76,17 +74,7 @@ class HomeViewModel extends ViewModel<HomeAction> {
   };
 
   /// Узнаём заранее, остались ли бесплатные генерации: проверка по нажатию задержала бы галерею.
-  Future<void> loadUsage() async {
-    if (await _sessionManager.hasActiveSubscriptions()) {
-      _isOutOfGenerations = false;
-      return;
-    }
-    try {
-      _isOutOfGenerations = (await _usageManager.obtainUsage()).left == 0;
-    } catch (error) {
-      debugPrint('HomeViewModel: cannot load the usage: $error');
-    }
-  }
+  Future<void> loadUsage() => _limit.load();
 
   /// Приложение вернулось из фона: сменилось время суток, а с понедельника — бесплатный лимит.
   void refresh() {
@@ -96,7 +84,7 @@ class HomeViewModel extends ViewModel<HomeAction> {
 
   Future<void> uploadScreenshot() async {
     if (_isPicking) return;
-    if (_isOutOfGenerations ?? false) {
+    if (_limit.isReached) {
       emit(const OpenPlus());
       return;
     }
@@ -112,11 +100,14 @@ class HomeViewModel extends ViewModel<HomeAction> {
     }
   }
 
+  /// Разбор выбранного скриншота — его ждёт сканирование.
+  Future<ChatBreakdown> analyze(Uint8List screenshot) => _analysisManager.analyzeScreenshot(screenshot);
+
   /// Оформили Cue Plus — лимита больше нет.
-  void didSubscribe() => _isOutOfGenerations = false;
+  void didSubscribe() => _limit.didSubscribe();
 
   /// Сервер ответил, что генерации кончились.
-  void didReachLimit() => _isOutOfGenerations = true;
+  void didReachLimit() => _limit.didReachLimit();
 
   void openMenu() => emit(const OpenMenu());
 
@@ -126,7 +117,7 @@ class HomeViewModel extends ViewModel<HomeAction> {
 
   @override
   void dispose() {
-    _usageChanges.cancel();
+    _limit.dispose();
     super.dispose();
   }
 }

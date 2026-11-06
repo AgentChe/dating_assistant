@@ -1,11 +1,7 @@
-import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/misc/custom_views/message_bubble.dart';
-import 'package:dating_assistant/misc/custom_views/pastel_card.dart';
-import 'package:dating_assistant/misc/custom_views/pressable.dart';
+import 'package:dating_assistant/misc/custom_views/phrase_card.dart';
 import 'package:dating_assistant/misc/custom_views/primary_button.dart';
-import 'package:dating_assistant/misc/custom_views/svg_icon.dart';
-import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/onboarding_content.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/onboarding_view_model.dart';
 import 'package:dating_assistant/presentation/splash/onboarding/views/onboarding_step_layout.dart';
@@ -40,51 +36,18 @@ class RevealStep extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _PhraseCard(text: OnboardingContent.cueReply.styled(viewModel.voice)),
+        PhraseCard(
+          text: OnboardingContent.cueReply.styled(viewModel.voice),
+          caption: 'Written in your voice',
+          onCopy: () {
+            Clipboard.setData(ClipboardData(text: OnboardingContent.cueReply.styled(viewModel.voice)));
+            HapticFeedback.selectionClick();
+          },
+        ),
         if (feedback != null) ...[const SizedBox(height: 16), OnboardingNote(emoji: '👀', text: feedback)],
         const Spacer(),
       ],
       buttons: [PrimaryButton(title: 'Continue', onPressed: viewModel.next)],
-    );
-  }
-}
-
-class _PhraseCard extends StatelessWidget {
-  const _PhraseCard({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return PastelCard(
-      radius: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  text,
-                  style: Fonts.body.copyWith(fontSize: 18, height: 23 / 18, color: Appearance.black),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Pressable(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: text));
-                  HapticFeedback.selectionClick();
-                },
-                semanticLabel: 'Copy',
-                child: const SvgIcon(AppIcons.copy, color: Appearance.black),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text('Written in your voice', style: Fonts.eyebrow.copyWith(fontWeight: FontWeight.w300)),
-        ],
-      ),
     );
   }
 }

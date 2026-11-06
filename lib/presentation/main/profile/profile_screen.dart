@@ -8,7 +8,7 @@ import 'package:dating_assistant/presentation/main/profile/views/about_you_card.
 import 'package:dating_assistant/presentation/main/profile/views/about_you_sheet.dart';
 import 'package:dating_assistant/presentation/main/profile/views/plan_section.dart';
 import 'package:dating_assistant/presentation/main/profile/views/profile_section.dart';
-import 'package:dating_assistant/presentation/main/profile/views/spice_card.dart';
+import 'package:dating_assistant/misc/custom_views/spice_card.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_copy.dart';
 import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:flutter/foundation.dart';
