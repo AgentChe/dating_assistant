@@ -10,14 +10,19 @@ class AppBottomSheet extends StatelessWidget {
   /// Блоки шторки сверху вниз, между ними 20.
   final List<Widget> children;
 
-  /// Показывает шторку поверх таб-бара с затемнением 60%, как в Figma.
-  static Future<T?> show<T>(BuildContext context, {required WidgetBuilder builder}) => showModalBottomSheet<T>(
+  /// Показывает шторку поверх таб-бара с затемнением 60%, как в Figma. У маленьких шторок поверх чата
+  /// затемнение слабее — его задаёт [barrierColor].
+  static Future<T?> show<T>(
+    BuildContext context, {
+    required WidgetBuilder builder,
+    Color barrierColor = const Color(0x99000000),
+  }) => showModalBottomSheet<T>(
     context: context,
     builder: builder,
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x99000000),
+    barrierColor: barrierColor,
     elevation: 0,
   );
 

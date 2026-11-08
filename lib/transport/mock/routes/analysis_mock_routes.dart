@@ -17,6 +17,12 @@ class AnalysisMockRoutes {
 
   Map<String, MockHandler> get routes => {'POST /api/v1/analyses': _analyze};
 
+  /// Сохранённый разбор по id — его просит коуч, открытый из разбора.
+  static Map<String, dynamic>? find(MockDatabase database, String id) {
+    final saved = database.read(_key)?['items'] as List<dynamic>? ?? const [];
+    return saved.cast<Map<String, dynamic>>().where((analysis) => analysis['id'] == id).firstOrNull;
+  }
+
   Future<Map<String, dynamic>> _analyze(MockRequest request) async {
     if ((request.body['screenshot'] as String? ?? '').isEmpty) {
       throw const NetworkError(NetworkErrorCode.logical, statusCode: 400, message: 'The screenshot is empty');

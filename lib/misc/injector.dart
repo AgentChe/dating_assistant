@@ -1,5 +1,6 @@
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
+import 'package:dating_assistant/service/coach/coach_manager.dart';
 import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/purchase/purchase_manager.dart';
@@ -51,6 +52,8 @@ final class Injector {
   late final analysisManager = AnalysisManager(transport, usageMediator);
 
   late final openingLineManager = OpeningLineManager(transport, profileManager, usageMediator);
+
+  late final coachManager = CoachManager(transport, profileManager, usageMediator);
 
   /// Транспорт к нашему серверу: моки или настоящий API.
   late final ApiTransport transport = GlobalDefinitions.useMocks

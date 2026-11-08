@@ -136,7 +136,13 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
 | `GET /api/v1/usage` | `{"generations": {"used": 2, "limit": 3}}` | бесплатные генерации на неделе — карточка плана в профиле |
 | `POST /api/v1/analyses` `{"screenshot": "<base64 JPEG>"}` | разбор переписки, см. `ChatBreakdown.fromJson`; 402 — генерации кончились | «Upload screenshot» → «Chat breakdown» |
 | `POST /api/v1/opening-lines` `{"spice", "you", "match"?, "profile_screenshot"?, "previous_lines"?}` | `{"id", "line", "match"?}` — в `match` то, что сервер прочитал в анкете; 402 — генерации кончились | Opening line |
+| `POST /api/v1/coach/messages` `{"conversation_id"?, "text"?, "tone", "spice", "you", "analysis_id"?, "chat_screenshot"?}` | `{"id", "conversation_id", "text", "suggestion"?: {"text", "why"?}, "quick_replies", "chat"?}` — в `chat` то, что сервер прочитал на скриншоте переписки; 404 — нет такого разговора или разбора; 402 — генерации кончились | Dating advice: чат с коучем |
 
 Генерации (разбор, ответы коуча, первые фразы) считает сервер: 3 в неделю бесплатно, с понедельника заново.
 Скриншоты сервер не хранит — в истории остаётся только разбор. Мок отвечает на любой скриншот примером из Figma
 и считает всех пользователей бесплатными; настоящий сервер узнаёт о подписке через OtterScale.
+
+Разговор с коучем тоже хранит сервер: первое сообщение начинает его, дальше клиент шлёт только новое сообщение
+и `conversation_id` из ответа. Коуч, открытый из разбора («Get the next message»), получает `analysis_id`, а «+»
+в поле ввода отправляет скриншот переписки (`chat_screenshot`). Мок не учитывает тон и узнаёт тему по словам
+(«ask them out», «stopped replying»), а «Give me another option» и «Make it bolder» относит к последней теме.

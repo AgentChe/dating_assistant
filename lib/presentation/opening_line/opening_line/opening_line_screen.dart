@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:dating_assistant/misc/components/instant_page_route.dart';
+import 'package:dating_assistant/misc/custom_views/copied_toast.dart';
 import 'package:dating_assistant/misc/custom_views/phrase_card.dart';
 import 'package:dating_assistant/misc/custom_views/primary_button.dart';
 import 'package:dating_assistant/misc/custom_views/screen_header.dart';
 import 'package:dating_assistant/misc/custom_views/spice_card.dart';
 import 'package:dating_assistant/misc/custom_views/try_again_sheet.dart';
 import 'package:dating_assistant/presentation/opening_line/opening_line/opening_line_view_model.dart';
-import 'package:dating_assistant/presentation/opening_line/opening_line/views/copied_toast.dart';
 import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:flutter/material.dart';

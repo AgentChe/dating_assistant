@@ -5,7 +5,7 @@ import 'package:dating_assistant/misc/custom_views/svg_icon.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:flutter/widgets.dart';
 
-/// Стеклянная плашка «Copied — paste it into your chat» с оранжевой галочкой.
+/// Стеклянная плашка «Copied — paste it into your chat» с оранжевой галочкой: у первой фразы и у сообщений коуча.
 class CopiedToast extends StatelessWidget {
   const CopiedToast({super.key});
 

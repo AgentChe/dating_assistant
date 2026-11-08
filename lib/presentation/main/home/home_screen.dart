@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/presentation/analysis/analyzing/analyzing_screen.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_screen.dart';
+import 'package:dating_assistant/presentation/dating_advice/dating_advice/dating_advice_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_view_model.dart';
 import 'package:dating_assistant/presentation/main/home/views/analyze_banner.dart';
 import 'package:dating_assistant/presentation/main/home/views/feature_tile.dart';
@@ -114,8 +115,9 @@ class _HomeScreenState extends State<HomeScreen> {
         await _openPlus();
       case OpenOpeningLine():
         await Navigator.of(context).push(OpeningLineSourceScreen.route());
-      // TODO: открыть чат с коучем из секции Dating advice (Figma 190:2058).
       case OpenDatingAdvice():
+        // Чат с коучем закрывает таб-бар: внизу у него поле ввода.
+        await Navigator.of(context, rootNavigator: true).push(DatingAdviceScreen.route());
       // TODO: что открывает меню, в макете пока не нарисовано.
       case OpenMenu():
         debugPrint('HomeScreen: $action is not implemented yet');

@@ -56,6 +56,14 @@ class Profile {
     spice: spice ?? this.spice,
   );
 
+  /// Что о пользователе нужно нейросети на сервере, чтобы писать его голосом, — блок `you` в запросах.
+  Map<String, dynamic> toRequestJson() => {
+    'gender': gender.name,
+    'age_range': ageRange.name,
+    'goal': goal.name,
+    'voice': voice.toJson(),
+  };
+
   Map<String, dynamic> toJson() => {
     'name': name,
     'goal': goal.name,

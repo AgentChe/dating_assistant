@@ -37,18 +37,11 @@ class GenerateOpeningLineRequest extends ApiRequest {
 
   @override
   Map<String, dynamic> get body {
-    final you = this.you;
     final match = this.match;
     final screenshot = profileScreenshot;
     return {
       'spice': spice.name,
-      if (you != null)
-        'you': {
-          'gender': you.gender.name,
-          'age_range': you.ageRange.name,
-          'goal': you.goal.name,
-          'voice': you.voice.toJson(),
-        },
+      'you': ?you?.toRequestJson(),
       if (match != null && !match.isEmpty) 'match': match.toJson(),
       if (screenshot != null) 'profile_screenshot': base64Encode(screenshot),
       if (previousLines.isNotEmpty) 'previous_lines': previousLines,

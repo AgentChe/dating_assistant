@@ -57,6 +57,10 @@ abstract final class AppIcons {
 
   static const menu = 'assets/icons/menu.svg';
 
+  static const plus = 'assets/icons/plus.svg';
+
+  static const send = 'assets/icons/send.svg';
+
   /// Стрелка вверх по графику; вниз — она же, отражённая.
   static const trendUp = 'assets/icons/trend_up.svg';
 

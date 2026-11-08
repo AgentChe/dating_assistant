@@ -58,16 +58,15 @@ void main() {
     expect(tester.getSize(tiles.first).width, 192);
   });
 
-  testWidgets('every entry point sends its action', (tester) async {
+  testWidgets('the menu sends its action', (tester) async {
     await openHome(tester);
 
-    // «Upload screenshot» и «Opening line» открывают экраны — это проверяют analysis_flow_test
-    // и opening_line_flow_test.
-    await tester.tap(find.text('Dating advice'));
+    // «Upload screenshot», «Dating advice» и «Opening line» открывают экраны — это проверяют analysis_flow_test,
+    // dating_advice_flow_test и opening_line_flow_test.
     await tester.tap(find.byType(GlassButton));
     await tester.pump();
 
-    expect(actions, [isA<OpenDatingAdvice>(), isA<OpenMenu>()]);
+    expect(actions, [isA<OpenMenu>()]);
   });
 
   testWidgets('fits a small iPhone with a larger system font', (tester) async {

@@ -1,17 +1,17 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
 
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/misc/components/instant_page_route.dart';
+import 'package:dating_assistant/misc/custom_views/blurred_top_bar.dart';
 import 'package:dating_assistant/misc/custom_views/pill_chip.dart';
 import 'package:dating_assistant/misc/custom_views/primary_button.dart';
-import 'package:dating_assistant/misc/custom_views/screen_header.dart';
 import 'package:dating_assistant/misc/custom_views/svg_icon.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_view_model.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/views/breakdown_card.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/views/read_card.dart';
+import 'package:dating_assistant/presentation/dating_advice/dating_advice/dating_advice_screen.dart';
 import 'package:dating_assistant/presentation/opening_line/opening_line/opening_line_screen.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
@@ -63,7 +63,7 @@ class _ChatBreakdownScreenState extends State<ChatBreakdownScreen> {
         children: [
           // Сверху — место под шапку, снизу в padding уже входит таб-бар.
           ListView(
-            padding: EdgeInsets.fromLTRB(16, padding.top + _TopBar.height + 4, 16, padding.bottom + 16),
+            padding: EdgeInsets.fromLTRB(16, padding.top + BlurredTopBar.height + 4, 16, padding.bottom + 16),
             children: [
               ReadCard(read: breakdown.read),
               gap,
@@ -167,11 +167,12 @@ class _ChatBreakdownScreenState extends State<ChatBreakdownScreen> {
               ),
             ],
           ),
+          // Кнопку «поделиться» из макета убрали: пока непонятно, чем делиться.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: _TopBar(title: _viewModel.title, onBack: () => Navigator.of(context).maybePop()),
+            child: BlurredTopBar(title: _viewModel.title, onBack: () => Navigator.of(context).maybePop()),
           ),
         ],
       ),
@@ -188,9 +189,9 @@ class _ChatBreakdownScreenState extends State<ChatBreakdownScreen> {
             match: MatchDetails(name: partner.name, age: partner.age, interests: topic.title),
           ),
         );
-      // TODO: открыть коуча с этой перепиской — фича Dating advice (Figma 190:2058).
       case OpenCoach():
-        debugPrint('ChatBreakdownScreen: $action is not implemented yet');
+        // Коуч с этой перепиской закрывает таб-бар: внизу у него поле ввода.
+        Navigator.of(context, rootNavigator: true).push(DatingAdviceScreen.route(breakdown: _viewModel.breakdown));
     }
   }
 }
@@ -216,52 +217,4 @@ class _Heading extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Шапка поверх разбора: затемнение с размытием, «назад» и имя. Кнопку «поделиться» из макета убрали:
-/// пока непонятно, чем делиться.
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.title, required this.onBack});
-
-  /// Без отступа сверху: 11 + шапка 48 + 12.
-  static const height = 71.0;
-
-  final String title;
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Размытие кончается до нижних 12: иначе оно подтягивает в шапку цвет карточки под ней,
-        // и по краю видна светлая полоса. Ниже остаётся только затемнение.
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 12,
-          child: ClipRect(
-            child: BackdropFilter(filter: _blur, child: const SizedBox.expand()),
-          ),
-        ),
-        DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xE6000000), Color(0xB8000000), Color(0x00000000)],
-              stops: [0, 0.7, 1],
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 11, 16, 12),
-            child: ScreenHeader(title: title, onBack: onBack),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static final _blur = ImageFilter.blur(sigmaX: 8, sigmaY: 8);
 }
