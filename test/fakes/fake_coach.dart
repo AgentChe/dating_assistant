@@ -3,11 +3,13 @@ import 'dart:typed_data';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/coach/coach_manager.dart';
 import 'package:dating_assistant/service/coach/model/attached_chat.dart';
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
+import 'package:dating_assistant/transport/network_error.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
@@ -73,6 +75,13 @@ class FakeCoachManager implements CoachManager {
   final List<Object> results;
 
   final sent = <SentCoachMessage>[];
+
+  /// Разговоры «на сервере» — их открывают из истории.
+  final conversations = <String, CoachConversation>{};
+
+  @override
+  Future<CoachConversation> obtainConversation(String id) async =>
+      conversations[id] ?? (throw const NetworkError(NetworkErrorCode.logical, statusCode: 404));
 
   @override
   Future<CoachReply> send({

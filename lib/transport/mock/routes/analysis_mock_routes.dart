@@ -4,7 +4,7 @@ import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
 /// Разбор переписки. Мок не читает скриншот: на любую картинку отвечает примером из Figma
-/// и сохраняет разбор для будущей истории — без самой картинки.
+/// и сохраняет разбор для истории — без самой картинки.
 class AnalysisMockRoutes {
   AnalysisMockRoutes(this._database, {required this.generationTime});
 
@@ -15,13 +15,40 @@ class AnalysisMockRoutes {
   /// Сколько «думает» нейросеть — чтобы на моках было видно сканирование.
   final Duration generationTime;
 
-  Map<String, MockHandler> get routes => {'POST /api/v1/analyses': _analyze};
+  Map<String, MockHandler> get routes => {
+    'POST /api/v1/analyses': _analyze,
+    'GET /api/v1/analyses/:id': _analysis,
+  };
 
-  /// Сохранённый разбор по id — его просит коуч, открытый из разбора.
-  static Map<String, dynamic>? find(MockDatabase database, String id) {
-    final saved = database.read(_key)?['items'] as List<dynamic>? ?? const [];
-    return saved.cast<Map<String, dynamic>>().where((analysis) => analysis['id'] == id).firstOrNull;
+  /// Сохранённый разбор по id — его открывают из истории и просит коуч, открытый из разбора.
+  static Map<String, dynamic>? find(MockDatabase database, String id) =>
+      _saved(database).where((analysis) => analysis['id'] == id).firstOrNull;
+
+  /// С кем переписка и главный вывод — для карточки у коуча и строки в истории.
+  static Map<String, dynamic> chatOf(Map<String, dynamic> analysis) {
+    final partner = analysis['partner'] as Map<String, dynamic>;
+    final read = analysis['read'] as Map<String, dynamic>;
+    return {'name': partner['name'], 'age': ?partner['age'], 'verdict': '${read['verdict']} — ${read['detail']}'};
   }
+
+  /// Разборы для истории: с кем переписка и главный вывод.
+  static List<Map<String, dynamic>> historyItems(MockDatabase database) => [
+    for (final analysis in _saved(database))
+      {
+        'type': 'analysis',
+        'id': analysis['id'],
+        'updated_at': analysis['created_at'],
+        'preview': chatOf(analysis)['verdict'],
+        'partner': analysis['partner'],
+      },
+  ];
+
+  static List<Map<String, dynamic>> _saved(MockDatabase database) =>
+      (database.read(_key)?['items'] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+
+  Map<String, dynamic> _analysis(MockRequest request) =>
+      find(_database, request.params['id']!) ??
+      (throw const NetworkError(NetworkErrorCode.logical, statusCode: 404, message: 'No such analysis'));
 
   Future<Map<String, dynamic>> _analyze(MockRequest request) async {
     if ((request.body['screenshot'] as String? ?? '').isEmpty) {

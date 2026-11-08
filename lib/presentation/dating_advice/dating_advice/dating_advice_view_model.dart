@@ -6,6 +6,7 @@ import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/coach/coach_manager.dart';
 import 'package:dating_assistant/service/coach/model/attached_chat.dart';
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
@@ -63,19 +64,34 @@ typedef ChatCard = ({String title, String? verdict});
 
 /// «Dating advice» (аналог DatingAdviceViewModel): чат с коучем. Пользователь описывает ситуацию своими словами,
 /// быстрым ответом или скриншотом переписки, коуч отвечает советом и готовым сообщением. Открытый из разбора
-/// («Get the next message»), коуч уже знает переписку и сразу пишет, что ответить.
+/// («Get the next message»), коуч уже знает переписку и сразу пишет, что ответить; открытый из истории —
+/// продолжает разговор с того же места.
 class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
   DatingAdviceViewModel({
     ChatBreakdown? breakdown,
+    CoachConversation? conversation,
     CoachManager? coachManager,
     ScreenshotPicker? picker,
     GenerationLimit? limit,
   }) : _coachManager = coachManager ?? Injector.shared.coachManager,
        _picker = picker ?? ScreenshotPicker(),
        _limit = limit ?? GenerationLimit(),
-       _chat = breakdown == null ? null : AttachedChat.fromBreakdown(breakdown),
-       _pendingAnalysisId = breakdown?.id {
-    if (breakdown == null) {
+       _chat = conversation?.chat ?? (breakdown == null ? null : AttachedChat.fromBreakdown(breakdown)),
+       _pendingAnalysisId = breakdown?.id,
+       _conversationId = conversation?.id {
+    if (conversation != null) {
+      // Приветствие не часть разговора: из истории показываем только то, что в нём было.
+      for (final message in conversation.messages) {
+        final text = message.text;
+        if (text == null) continue;
+        _entries.add(
+          message.isFromCoach
+              ? CoachEntry(_nextId++, text: text, suggestion: message.suggestion)
+              : UserEntry(_nextId++, text: text),
+        );
+      }
+      _quickReplies = conversation.quickReplies;
+    } else if (breakdown == null) {
       _entries.add(CoachEntry(_nextId++, text: greeting));
       _quickReplies = starters;
     }

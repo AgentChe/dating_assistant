@@ -5,6 +5,7 @@ import 'package:dating_assistant/presentation/dating_advice/dating_advice/dating
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/coach/coach_manager.dart';
 import 'package:dating_assistant/service/coach/model/attached_chat.dart';
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
@@ -23,11 +24,13 @@ void main() {
 
   DatingAdviceViewModel makeViewModel({
     ChatBreakdown? breakdown,
+    CoachConversation? conversation,
     CoachManager? coachManager,
     ScreenshotPicker? picker,
   }) {
     final viewModel = DatingAdviceViewModel(
       breakdown: breakdown,
+      conversation: conversation,
       coachManager: coachManager ?? mock.manager,
       picker: picker ?? FakeScreenshotPicker(),
       // Лимит считает тот же мок-сервер, что и ответы коуча.
@@ -143,6 +146,61 @@ void main() {
 
     expect(coach.sent.map((message) => message.analysisId), [breakdown.id, breakdown.id, null]);
     expect(viewModel.chatCard?.title, 'Nika, 28');
+  });
+
+  test('a conversation from the history continues where it stopped', () async {
+    final coach = FakeCoachManager([coachReply(conversationId: 'conversation-7')]);
+    final viewModel = makeViewModel(
+      coachManager: coach,
+      conversation: const CoachConversation(
+        id: 'conversation-7',
+        chat: AttachedChat(name: 'Nika', age: 28, verdict: 'Nika is into this.'),
+        messages: [
+          // Скриншот без слов — в ленте его нет.
+          CoachMessage(isFromCoach: false),
+          CoachMessage(
+            isFromCoach: true,
+            text: 'I read your chat.',
+            suggestion: CoachSuggestion(text: 'which mountains?'),
+          ),
+          CoachMessage(isFromCoach: false, text: 'Make it bolder'),
+          CoachMessage(
+            isFromCoach: true,
+            text: 'Bolder it is:',
+            suggestion: CoachSuggestion(text: 'coffee thursday?'),
+          ),
+        ],
+        quickReplies: ['Give me another option'],
+      ),
+    );
+
+    // Приветствие не часть разговора — только его сообщения.
+    expect(
+      viewModel.entries.map(
+        (entry) => (
+          entry.runtimeType,
+          switch (entry) {
+            CoachEntry(:final text) || UserEntry(:final text) => text,
+          },
+        ),
+      ),
+      [
+        (CoachEntry, 'I read your chat.'),
+        (UserEntry, 'Make it bolder'),
+        (CoachEntry, 'Bolder it is:'),
+      ],
+    );
+    expect((viewModel.entries.last as CoachEntry).suggestion?.text, 'coffee thursday?');
+    expect(viewModel.chatCard, (title: 'Nika, 28', verdict: 'Nika is into this.'));
+    expect(viewModel.quickReplies, ['Give me another option']);
+
+    await viewModel.start();
+    await viewModel.sendQuickReply('Give me another option');
+
+    // Тот же разговор, и переписку второй раз не шлём.
+    expect(coach.sent.single.conversationId, 'conversation-7');
+    expect(coach.sent.single.analysisId, isNull);
+    expect(coach.sent.single.chatScreenshot, isNull);
   });
 
   test('a screenshot from the gallery is read and attached to the chat', () async {

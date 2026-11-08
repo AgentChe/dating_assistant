@@ -135,8 +135,12 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
 |--------------------|---------------------------------------------|----------------------------------------------------|
 | `GET /api/v1/usage` | `{"generations": {"used": 2, "limit": 3}}` | бесплатные генерации на неделе — карточка плана в профиле |
 | `POST /api/v1/analyses` `{"screenshot": "<base64 JPEG>"}` | разбор переписки, см. `ChatBreakdown.fromJson`; 402 — генерации кончились | «Upload screenshot» → «Chat breakdown» |
-| `POST /api/v1/opening-lines` `{"spice", "you", "match"?, "profile_screenshot"?, "previous_lines"?}` | `{"id", "line", "match"?}` — в `match` то, что сервер прочитал в анкете; 402 — генерации кончились | Opening line |
+| `POST /api/v1/opening-lines` `{"spice", "session_id"?, "you", "match"?, "profile_screenshot"?, "previous_lines"?}` | `{"id", "session_id", "line", "match"?}` — в `match` то, что сервер прочитал в анкете; 404 — нет такой сессии; 402 — генерации кончились | Opening line |
 | `POST /api/v1/coach/messages` `{"conversation_id"?, "text"?, "tone", "spice", "you", "analysis_id"?, "chat_screenshot"?}` | `{"id", "conversation_id", "text", "suggestion"?: {"text", "why"?}, "quick_replies", "chat"?}` — в `chat` то, что сервер прочитал на скриншоте переписки; 404 — нет такого разговора или разбора; 402 — генерации кончились | Dating advice: чат с коучем |
+| `GET /api/v1/history` | `{"items": [{"type", "id", "updated_at", "preview", "partner"?: {"name", "age"?}}]}` — `type`: `analysis`, `coach_conversation` или `opening_line`; новые сверху, без пагинации | вкладка History |
+| `GET /api/v1/analyses/:id` | разбор, как в ответе `POST /api/v1/analyses`; 404 — нет такого | открыть разбор из истории |
+| `GET /api/v1/coach/conversations/:id` | `{"id", "chat"?, "messages": [{"from": "you" \| "coach", "text"?, "suggestion"?}], "quick_replies"}`; 404 — нет такого | продолжить разговор из истории |
+| `GET /api/v1/opening-lines/:session_id` | последняя фраза сессии, как в ответе `POST`, и `match` — всё, что известно о мэтче; 404 — нет такой | продолжить первые фразы из истории |
 
 Генерации (разбор, ответы коуча, первые фразы) считает сервер: 3 в неделю бесплатно, с понедельника заново.
 Скриншоты сервер не хранит — в истории остаётся только разбор. Мок отвечает на любой скриншот примером из Figma
@@ -146,3 +150,9 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
 и `conversation_id` из ответа. Коуч, открытый из разбора («Get the next message»), получает `analysis_id`, а «+»
 в поле ввода отправляет скриншот переписки (`chat_screenshot`). Мок не учитывает тон и узнаёт тему по словам
 («ask them out», «stopped replying»), а «Give me another option» и «Make it bolder» относит к последней теме.
+
+История — это разборы, разговоры с коучем и сессии первых фраз. Сервер отдаёт её целиком (`GET /api/v1/history`):
+в строке списка только тип, превью и время, а саму запись клиент загружает по `id` у её домена. Первые фразы для
+одного мэтча — одна сессия: «Another one» шлёт `session_id` из прошлого ответа, и в истории остаётся одна запись
+с последней фразой. Записи неизвестного типа клиент пропускает — сервер может добавлять новые типы. Вкладка
+перезагружает историю после каждой генерации (`UsageMediator`), а ищет по уже загруженному списку.

@@ -70,14 +70,17 @@ void main() {
     expect(viewModel.line?.text, anyOf(contains('Nika'), contains('into mountains')));
   });
 
-  test('Another one never repeats a line', () async {
+  test('Another one never repeats a line and stays in the same session', () async {
     final viewModel = makeViewModel(match: const MatchDetails(name: 'Sam'));
     await viewModel.start();
     final seen = {viewModel.line!.text};
+    final session = viewModel.line!.sessionId;
 
     await viewModel.generate();
 
     expect(seen.add(viewModel.line!.text), isTrue);
+    // В истории это одна запись, а не две.
+    expect(viewModel.line!.sessionId, session);
   });
 
   test('without free generations Cue Plus opens and the line stays', () async {

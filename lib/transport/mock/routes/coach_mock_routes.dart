@@ -14,7 +14,7 @@ typedef _Reply = ({String topic, String advice, String line, String? why, List<S
 /// про Nika, на текст — заготовкой по теме, которую узнаёт по словам («ask them out», «stopped replying»).
 ///
 /// Разговоры хранит, как настоящий сервер: «Give me another option» и «Make it bolder» относятся к последней
-/// теме, а предложенные сообщения не повторяются.
+/// теме, предложенные сообщения не повторяются, а из истории разговор открывается с того же места.
 class CoachMockRoutes {
   CoachMockRoutes(this._database, {required this.generationTime});
 
@@ -25,7 +25,45 @@ class CoachMockRoutes {
   /// Сколько «думает» нейросеть — чтобы на моках было видно, как коуч печатает.
   final Duration generationTime;
 
-  Map<String, MockHandler> get routes => {'POST /api/v1/coach/messages': _send};
+  Map<String, MockHandler> get routes => {
+    'POST /api/v1/coach/messages': _send,
+    'GET /api/v1/coach/conversations/:id': _conversation,
+  };
+
+  /// Разговоры для истории: последнее, что коуч предложил отправить, и с кем переписка, если её прикладывали.
+  static List<Map<String, dynamic>> historyItems(MockDatabase database) => [
+    for (final MapEntry(key: id, value: conversation as Map<String, dynamic>) in (database.read(_key) ?? {}).entries)
+      {
+        'type': 'coach_conversation',
+        'id': id,
+        'updated_at': conversation['updated_at'],
+        'preview': _preview(conversation),
+        if (conversation['chat'] case {'name': final String name} && final Map<String, dynamic> chat)
+          'partner': {'name': name, 'age': ?chat['age']},
+      },
+  ];
+
+  static String _preview(Map<String, dynamic> conversation) {
+    final last = (conversation['messages'] as List<dynamic>).cast<Map<String, dynamic>>().lastWhere(
+      (message) => message['from'] == 'coach',
+    );
+    return (last['suggestion'] as Map<String, dynamic>?)?['text'] as String? ?? last['text'] as String;
+  }
+
+  /// Разговор целиком — чтобы продолжить его из истории.
+  Map<String, dynamic> _conversation(MockRequest request) {
+    final id = request.params['id']!;
+    final conversation = (_database.read(_key) ?? {})[id] as Map<String, dynamic>?;
+    if (conversation == null) {
+      throw const NetworkError(NetworkErrorCode.logical, statusCode: 404, message: 'No such conversation');
+    }
+    return {
+      'id': id,
+      'chat': ?conversation['chat'],
+      'messages': conversation['messages'],
+      'quick_replies': conversation['quick_replies'],
+    };
+  }
 
   Future<Map<String, dynamic>> _send(MockRequest request) async {
     final body = request.body;
@@ -56,23 +94,27 @@ class CoachMockRoutes {
 
     await Future<void>.delayed(generationTime);
 
-    final partner = hasScreenshot
-        ? _nika['name'] as String
-        : (analysis?['partner'] as Map<String, dynamic>?)?['name'] as String? ?? conversation?['partner'] as String?;
+    // О какой переписке разговор: новый скриншот, разбор или та, что приложили раньше.
+    final chat = hasScreenshot
+        ? _nika
+        : analysis != null
+        ? AnalysisMockRoutes.chatOf(analysis)
+        : conversation?['chat'] as Map<String, dynamic>?;
     final used = [...?(conversation?['used'] as List<dynamic>?)?.cast<String>()];
     final reply = _reply(
       text: text.toLowerCase(),
       hasChat: hasScreenshot || analysis != null,
       topic: conversation?['topic'] as String?,
       used: used,
-      partner: partner,
+      partner: chat?['name'] as String?,
     );
 
     final now = DateTime.now().toUtc();
     final id = conversationId ?? 'conversation-${now.microsecondsSinceEpoch}';
+    final suggestion = {'text': reply.line, 'why': ?reply.why};
     conversations[id] = {
       'topic': reply.topic,
-      'partner': ?partner,
+      'chat': ?chat,
       'used': [...used, reply.line],
       'messages': [
         ...?(conversation?['messages'] as List<dynamic>?),
@@ -82,8 +124,9 @@ class CoachMockRoutes {
           'analysis_id': ?analysisId,
           if (hasScreenshot) 'attached': 'screenshot',
         },
-        {'from': 'coach', 'text': reply.advice, 'suggestion': reply.line},
+        {'from': 'coach', 'text': reply.advice, 'suggestion': suggestion},
       ],
+      'quick_replies': reply.quickReplies,
       'updated_at': now.toIso8601String(),
     };
     await _database.write(_key, conversations);
@@ -92,7 +135,7 @@ class CoachMockRoutes {
       'id': 'coach-${now.microsecondsSinceEpoch}',
       'conversation_id': id,
       'text': reply.advice,
-      'suggestion': {'text': reply.line, 'why': ?reply.why},
+      'suggestion': suggestion,
       'quick_replies': reply.quickReplies,
       'chat': ?(hasScreenshot ? _nika : null),
     };

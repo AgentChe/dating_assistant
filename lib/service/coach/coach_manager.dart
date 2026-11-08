@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
+import 'package:dating_assistant/service/coach/request/get_coach_conversation_request.dart';
 import 'package:dating_assistant/service/coach/request/send_coach_message_request.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
@@ -42,4 +44,8 @@ class CoachManager {
     _usageMediator.notifyGenerationUsed();
     return CoachReply.fromJson(json);
   }
+
+  /// Разговор из истории.
+  Future<CoachConversation> obtainConversation(String id) async =>
+      CoachConversation.fromJson(await _transport.callServerApi(GetCoachConversationRequest(id)));
 }

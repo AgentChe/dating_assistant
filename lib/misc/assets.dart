@@ -59,6 +59,8 @@ abstract final class AppIcons {
 
   static const plus = 'assets/icons/plus.svg';
 
+  static const search = 'assets/icons/search.svg';
+
   static const send = 'assets/icons/send.svg';
 
   /// Стрелка вверх по графику; вниз — она же, отражённая.

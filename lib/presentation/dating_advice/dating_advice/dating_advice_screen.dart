@@ -15,19 +15,24 @@ import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/typing_bubble.dart';
 import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// «Dating advice» (аналог DatingAdviceViewController): чат с коучем. Открывается поверх таб-бара —
 /// внизу у него поле ввода, а над ним быстрые ответы.
 class DatingAdviceScreen extends StatefulWidget {
-  const DatingAdviceScreen({super.key, this.breakdown, this.viewModel});
+  const DatingAdviceScreen({super.key, this.breakdown, this.conversation, this.viewModel});
 
   /// [breakdown] — разбор, из которого открыли коуча («Get the next message»): переписка уже приложена.
-  static Route<void> route({ChatBreakdown? breakdown}) =>
-      MaterialPageRoute(builder: (_) => DatingAdviceScreen(breakdown: breakdown));
+  /// [conversation] — разговор из истории: продолжается с того же места.
+  static Route<void> route({ChatBreakdown? breakdown, CoachConversation? conversation}) => MaterialPageRoute(
+    builder: (_) => DatingAdviceScreen(breakdown: breakdown, conversation: conversation),
+  );
 
   final ChatBreakdown? breakdown;
+
+  final CoachConversation? conversation;
 
   /// Для тестов; в приложении экран создаёт ViewModel сам.
   final DatingAdviceViewModel? viewModel;
@@ -37,7 +42,8 @@ class DatingAdviceScreen extends StatefulWidget {
 }
 
 class _DatingAdviceScreenState extends State<DatingAdviceScreen> {
-  late final _viewModel = widget.viewModel ?? DatingAdviceViewModel(breakdown: widget.breakdown);
+  late final _viewModel =
+      widget.viewModel ?? DatingAdviceViewModel(breakdown: widget.breakdown, conversation: widget.conversation);
 
   late final StreamSubscription<DatingAdviceAction> _actions;
 

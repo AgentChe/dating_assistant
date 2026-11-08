@@ -20,6 +20,7 @@ class OpeningLineViewModel extends ViewModel<OpeningLineAction> {
     GenerationLimit? limit,
   }) : _match = match ?? firstLine?.match,
        _line = firstLine,
+       _sessionId = firstLine?.sessionId,
        _openingLineManager = openingLineManager ?? Injector.shared.openingLineManager,
        _limit = limit ?? GenerationLimit() {
     _spice = (profileManager ?? Injector.shared.profileManager).profile?.spice ?? SpiceLevel.warm;
@@ -37,6 +38,9 @@ class OpeningLineViewModel extends ViewModel<OpeningLineAction> {
   MatchDetails? _match;
 
   OpeningLine? _line;
+
+  /// Сессия на сервере: следующие фразы — в ней же, в истории это одна запись.
+  String? _sessionId;
 
   late SpiceLevel _spice;
 
@@ -79,8 +83,14 @@ class OpeningLineViewModel extends ViewModel<OpeningLineAction> {
     notifyListeners();
     while (true) {
       try {
-        final line = await _openingLineManager.generate(spice: _spice, match: _match, previousLines: _previousLines);
+        final line = await _openingLineManager.generate(
+          spice: _spice,
+          sessionId: _sessionId,
+          match: _match,
+          previousLines: _previousLines,
+        );
         _line = line;
+        _sessionId = line.sessionId;
         _previousLines.add(line.text);
         _match ??= line.match;
         break;

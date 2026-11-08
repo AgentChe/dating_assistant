@@ -3,6 +3,7 @@ import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
 import 'package:dating_assistant/transport/mock/routes/analysis_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/coach_mock_routes.dart';
+import 'package:dating_assistant/transport/mock/routes/history_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/opening_line_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
@@ -20,6 +21,7 @@ class MockServer {
         ...AnalysisMockRoutes(database, generationTime: generationTime).routes,
         ...OpeningLineMockRoutes(database, generationTime: generationTime).routes,
         ...CoachMockRoutes(database, generationTime: generationTime).routes,
+        ...HistoryMockRoutes(database).routes,
       };
 
   /// Маршруты вида `'GET /api/v1/analyses/:id'` → обработчик.
