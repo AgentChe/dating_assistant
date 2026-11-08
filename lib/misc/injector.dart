@@ -1,7 +1,9 @@
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/coach/coach_manager.dart';
+import 'package:dating_assistant/service/connectivity/connectivity_manager.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
+import 'package:dating_assistant/service/history/history_mediator.dart';
 import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/purchase/purchase_manager.dart';
@@ -13,6 +15,8 @@ import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
 import 'package:dating_assistant/transport/rest_api_transport.dart';
+import 'package:hive_ce/hive_ce.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Сборка зависимостей — единственное место, где решается, какие реализации
@@ -21,21 +25,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// ViewModel по умолчанию берут менеджеры отсюда, а в тестах им можно передать
 /// свои реализации через конструктор.
 final class Injector {
-  Injector._(this._preferences);
+  Injector._(this._preferences, this._historyBox);
 
   static Injector? _shared;
 
   static Injector get shared => _shared ?? (throw StateError('Call Injector.configure() before runApp()'));
 
-  /// Вызывается один раз в main() до runApp().
-  static Future<void> configure() async {
+  /// Вызывается один раз в main() до runApp(). [historyBox] — для тестов: ящик Hive в памяти.
+  static Future<void> configure({Box<String>? historyBox}) async {
     final preferences = await SharedPreferencesWithCache.create(
       cacheOptions: const SharedPreferencesWithCacheOptions(),
     );
-    _shared = Injector._(preferences);
+    _shared = Injector._(preferences, historyBox ?? await _openHistory());
+  }
+
+  /// История лежит в Application Support: её не видно в «Файлах», и система не чистит её, как кэш.
+  static Future<Box<String>> _openHistory() async {
+    Hive.init((await getApplicationSupportDirectory()).path);
+    return Hive.openBox<String>('history');
   }
 
   final SharedPreferencesWithCache _preferences;
+
+  final Box<String> _historyBox;
 
   late final sessionManager = SessionManager(
     host: GlobalDefinitions.otterScaleHost,
@@ -50,13 +62,17 @@ final class Injector {
 
   late final usageMediator = UsageMediator();
 
+  late final historyMediator = HistoryMediator();
+
+  late final historyManager = HistoryManager(_historyBox, historyMediator);
+
+  late final connectivityManager = ConnectivityManager();
+
   late final analysisManager = AnalysisManager(transport, usageMediator);
 
   late final openingLineManager = OpeningLineManager(transport, profileManager, usageMediator);
 
   late final coachManager = CoachManager(transport, profileManager, usageMediator);
-
-  late final historyManager = HistoryManager(transport);
 
   /// Транспорт к нашему серверу: моки или настоящий API.
   late final ApiTransport transport = GlobalDefinitions.useMocks

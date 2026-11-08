@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dating_assistant/misc/assets.dart';
-import 'package:dating_assistant/misc/custom_views/primary_button.dart';
+import 'package:dating_assistant/misc/custom_views/app_dialog.dart';
+import 'package:dating_assistant/misc/custom_views/glass_toast.dart';
 import 'package:dating_assistant/misc/custom_views/screen_header.dart';
-import 'package:dating_assistant/misc/custom_views/try_again_sheet.dart';
 import 'package:dating_assistant/misc/extensions/history_titles.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/presentation/analysis/analyzing/analyzing_screen.dart';
@@ -13,11 +13,11 @@ import 'package:dating_assistant/presentation/main/history/history_view_model.da
 import 'package:dating_assistant/presentation/main/history/views/history_empty.dart';
 import 'package:dating_assistant/presentation/main/history/views/history_row.dart';
 import 'package:dating_assistant/presentation/main/history/views/history_search_field.dart';
+import 'package:dating_assistant/presentation/main/history/views/swipe_to_delete.dart';
 import 'package:dating_assistant/presentation/opening_line/opening_line/opening_line_screen.dart';
 import 'package:dating_assistant/presentation/splash/plus_sheet/plus_sheet.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/history/model/history_item.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// Вкладка «History» (аналог HistoryViewController): разборы, разговоры с коучем и первые фразы, новые сверху.
@@ -37,16 +37,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   late final StreamSubscription<HistoryAction> _actions;
 
+  /// Строка, у которой свайпом открыто удаление; открытой бывает только одна.
+  String? _openRowId;
+
+  /// Плашка «Conversation deleted · Undo» живёт около трёх секунд.
+  Timer? _undoTimer;
+
   @override
   void initState() {
     super.initState();
     _actions = _viewModel.actions.listen(_handle);
-    _viewModel.tryAgain = (error) => TryAgainSheet.show(context, error);
     _viewModel.start();
   }
 
   @override
   void dispose() {
+    _undoTimer?.cancel();
     _actions.cancel();
     _viewModel.dispose();
     super.dispose();
@@ -69,56 +75,107 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       body: ListenableBuilder(
         listenable: _viewModel,
-        builder: (context, _) {
-          if (!_viewModel.isLoaded || _viewModel.isEmpty) {
-            return Padding(
-              padding: insets,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  header,
-                  Expanded(
-                    child: Center(
-                      child: _viewModel.isEmpty
-                          ? HistoryEmpty(onAnalyze: _viewModel.analyzeChat)
-                          : _viewModel.hasFailed
-                          ? _LoadFailure(onRetry: _viewModel.load)
-                          : const CupertinoActivityIndicator(),
+        builder: (context, _) => Stack(
+          children: [
+            if (_viewModel.isEmpty)
+              Padding(
+                padding: insets,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    header,
+                    Expanded(
+                      child: Center(child: HistoryEmpty(onAnalyze: _viewModel.analyzeChat)),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final items = _viewModel.items;
-          return ListView(
-            padding: insets,
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            children: [
-              header,
-              const SizedBox(height: 28),
-              HistorySearchField(onChanged: _viewModel.search),
-              const SizedBox(height: 32),
-              Text(_viewModel.countLabel, style: Fonts.subtitle.copyWith(height: 20.16 / 16)),
-              const SizedBox(height: 12),
-              for (final (index, item) in items.indexed) ...[
-                if (index > 0) const SizedBox(height: 8),
-                HistoryRow(
-                  key: ValueKey(item.id),
-                  icon: _icon(item.kind),
-                  title: item.title,
-                  time: _viewModel.timeLabel(item),
-                  preview: item.preview,
-                  isOpening: item.id == _viewModel.openingId,
-                  onTap: () => _viewModel.open(item),
+                  ],
                 ),
-              ],
-            ],
-          );
-        },
+              )
+            else
+              // Список поехал — открытое удаление закрывается, как в iOS.
+              NotificationListener<ScrollStartNotification>(
+                onNotification: (_) {
+                  if (_openRowId != null) setState(() => _openRowId = null);
+                  return false;
+                },
+                child: ListView(
+                  padding: insets,
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  children: [
+                    header,
+                    const SizedBox(height: 28),
+                    HistorySearchField(onChanged: _viewModel.search),
+                    const SizedBox(height: 32),
+                    Text(_viewModel.countLabel, style: Fonts.subtitle.copyWith(height: 20.16 / 16)),
+                    const SizedBox(height: 12),
+                    for (final (index, item) in _viewModel.items.indexed) ...[
+                      if (index > 0) const SizedBox(height: 8),
+                      SwipeToDelete(
+                        key: ValueKey(item.id),
+                        isOpen: item.id == _openRowId,
+                        onOpenChanged: (isOpen) => setState(() => _openRowId = isOpen ? item.id : null),
+                        onDelete: () => _confirmDelete(item),
+                        child: HistoryRow(
+                          icon: _icon(item.kind),
+                          title: item.title,
+                          time: _viewModel.timeLabel(item),
+                          preview: item.preview,
+                          onTap: () => _tapRow(item),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            // Плашка остаётся и над пустой историей: удалили последнюю запись — её ещё можно вернуть.
+            Positioned(
+              top: padding.top + 75,
+              left: 16,
+              right: 16,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _viewModel.canUndo
+                      ? GlassToast.info(message: 'Conversation deleted', action: 'Undo', onAction: _undo)
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  /// Пока у строки открыто удаление, нажатие на любую строку только закрывает его.
+  void _tapRow(HistoryItem item) {
+    if (_openRowId != null) {
+      setState(() => _openRowId = null);
+      return;
+    }
+    _viewModel.open(item);
+  }
+
+  Future<void> _confirmDelete(HistoryItem item) async {
+    // Как в макете: под вопросом строка уже стоит на месте.
+    setState(() => _openRowId = null);
+    final isConfirmed = await AppDialog.show(
+      context,
+      icon: AppIcons.trash,
+      title: 'Delete this conversation?',
+      message: 'It will be removed from your history. This can’t be undone.',
+      confirmTitle: 'Continue',
+      cancelTitle: 'Cancel',
+      isDestructive: true,
+    );
+    if (!isConfirmed || !mounted) return;
+    await _viewModel.delete(item);
+    _undoTimer?.cancel();
+    _undoTimer = Timer(const Duration(seconds: 3), _viewModel.forgetDeleted);
+  }
+
+  void _undo() {
+    _undoTimer?.cancel();
+    _viewModel.undo();
   }
 
   static String _icon(HistoryKind kind) => switch (kind) {
@@ -136,15 +193,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
         await navigator.push(ChatBreakdownScreen.route(breakdown));
       case OpenConversation(:final conversation):
         await Navigator.of(context, rootNavigator: true).push(DatingAdviceScreen.route(conversation: conversation));
-      case OpenOpeningLine(:final line):
-        await navigator.push(OpeningLineScreen.route(match: line.match, firstLine: line));
+      case OpenOpeningLines(:final session):
+        await navigator.push(OpeningLineScreen.route(session: session));
       case AnalyzeScreenshot(:final screenshot):
         // Разбор открывается во вкладке, пока сканирование ещё закрывает всё сверху, — и проявляется под ним.
         final outcome = await Navigator.of(context, rootNavigator: true).push(
           AnalyzingScreen.route<ChatBreakdown>(
             screenshot: screenshot,
             task: () => _viewModel.analyze(screenshot),
-            onFinished: (breakdown) => navigator.push(ChatBreakdownScreen.route(breakdown, isAnimated: false)),
+            onFinished: (breakdown) {
+              _viewModel.keep(breakdown);
+              navigator.push(ChatBreakdownScreen.route(breakdown, isAnimated: false));
+            },
           ),
         );
         if (outcome == AnalyzingOutcome.limitReached && mounted) {
@@ -158,24 +218,5 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _openPlus() async {
     if (await PlusSheet.present(context)) _viewModel.didSubscribe();
-  }
-}
-
-/// История не загрузилась, а показать нечего.
-class _LoadFailure extends StatelessWidget {
-  const _LoadFailure({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('Couldn’t load your history', textAlign: TextAlign.center, style: Fonts.subtitle),
-        const SizedBox(height: 16),
-        PrimaryButton.secondary(title: 'Try again', onPressed: onRetry),
-      ],
-    );
   }
 }

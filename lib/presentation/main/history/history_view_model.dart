@@ -6,12 +6,11 @@ import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
-import 'package:dating_assistant/service/coach/coach_manager.dart';
 import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
+import 'package:dating_assistant/service/history/history_mediator.dart';
 import 'package:dating_assistant/service/history/model/history_item.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
-import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
@@ -37,11 +36,11 @@ final class OpenConversation extends HistoryAction {
   final CoachConversation conversation;
 }
 
-/// Сессия первых фраз — последняя фраза, «Another one» продолжает её.
-final class OpenOpeningLine extends HistoryAction {
-  const OpenOpeningLine(this.line);
+/// Фразы для мэтча — последняя фраза, «Another one» продолжает сессию.
+final class OpenOpeningLines extends HistoryAction {
+  const OpenOpeningLines(this.session);
 
-  final OpeningLine line;
+  final OpeningLineSession session;
 }
 
 /// «Analyze a chat»: скриншот выбран — разбираем.
@@ -56,15 +55,14 @@ final class OpenPlus extends HistoryAction {
   const OpenPlus();
 }
 
-/// Вкладка «History» (аналог HistoryViewModel из Swift-проектов): разборы, разговоры с коучем и первые фразы,
-/// новые сверху. Историю хранит сервер и отдаёт целиком, поэтому поиск идёт по уже загруженному списку.
+/// Вкладка «History» (аналог HistoryViewModel из Swift-проектов): разборы, разговоры с коучем и фразы,
+/// новые сверху. История хранится только на устройстве и читается сразу, поиск — по всему списку.
 class HistoryViewModel extends ViewModel<HistoryAction> {
   HistoryViewModel({
     DateTime Function()? now,
     HistoryManager? historyManager,
+    HistoryMediator? historyMediator,
     AnalysisManager? analysisManager,
-    CoachManager? coachManager,
-    OpeningLineManager? openingLineManager,
     ScreenshotPicker? picker,
     SessionManager? sessionManager,
     UsageManager? usageManager,
@@ -72,16 +70,14 @@ class HistoryViewModel extends ViewModel<HistoryAction> {
   }) : _now = now ?? DateTime.now,
        _historyManager = historyManager ?? Injector.shared.historyManager,
        _analysisManager = analysisManager ?? Injector.shared.analysisManager,
-       _coachManager = coachManager ?? Injector.shared.coachManager,
-       _openingLineManager = openingLineManager ?? Injector.shared.openingLineManager,
        _picker = picker ?? ScreenshotPicker(),
        _limit = GenerationLimit(
          sessionManager: sessionManager,
          usageManager: usageManager,
          usageMediator: usageMediator,
        ) {
-    // Каждая генерация — новая запись в истории или свежая в старой: список устарел, перезагружаем.
-    _changes = (usageMediator ?? Injector.shared.usageMediator).changes.listen((_) => load());
+    // Что-то сохранили — на этой вкладке или на другой: список устарел.
+    _changes = (historyMediator ?? Injector.shared.historyMediator).changes.listen((_) => load());
   }
 
   final DateTime Function() _now;
@@ -90,47 +86,30 @@ class HistoryViewModel extends ViewModel<HistoryAction> {
 
   final AnalysisManager _analysisManager;
 
-  final CoachManager _coachManager;
-
-  final OpeningLineManager _openingLineManager;
-
   final ScreenshotPicker _picker;
 
   final GenerationLimit _limit;
 
   late final StreamSubscription<void> _changes;
 
-  List<HistoryItem>? _items;
-
-  var _isLoadingHistory = false;
-
-  /// Пока грузили, история снова изменилась — загрузим ещё раз.
-  var _needsReload = false;
-
-  var _hasFailed = false;
+  var _items = const <HistoryItem>[];
 
   var _query = '';
 
-  String? _openingId;
-
   var _isPicking = false;
 
-  /// false — история ещё ни разу не загрузилась: крутится спиннер или видна ошибка.
-  bool get isLoaded => _items != null;
-
-  /// Загрузить не вышло, а показать нечего.
-  bool get hasFailed => _hasFailed && _items == null;
+  /// Только что удалённая запись: пока она есть, плашка «Conversation deleted» предлагает «Undo».
+  DeletedHistoryRecord? _deleted;
 
   /// В истории пусто — заглушка с «Analyze a chat».
-  bool get isEmpty => _items?.isEmpty ?? false;
+  bool get isEmpty => _items.isEmpty;
 
   /// Записи под поисковый запрос: по названию, имени собеседника и превью.
   List<HistoryItem> get items {
-    final items = _items ?? const <HistoryItem>[];
     final query = _query.trim().toLowerCase();
-    if (query.isEmpty) return items;
+    if (query.isEmpty) return _items;
     return [
-      for (final item in items)
+      for (final item in _items)
         if ([item.title, item.partner?.name, item.preview].any((text) => text?.toLowerCase().contains(query) ?? false))
           item,
     ];
@@ -143,35 +122,14 @@ class HistoryViewModel extends ViewModel<HistoryAction> {
     final count => '$count conversations',
   };
 
-  /// Запись, которая сейчас открывается: вместо времени у неё спиннер, остальные ждут.
-  String? get openingId => _openingId;
-
   /// Узнаём заранее, остались ли бесплатные генерации, — для «Analyze a chat».
   void start() {
     _limit.load();
     load();
   }
 
-  /// Без пагинации: сервер отдаёт всё сразу. Если список уже есть, он остаётся на экране, пока грузится новый.
-  Future<void> load() async {
-    if (_isLoadingHistory) {
-      _needsReload = true;
-      return;
-    }
-    _isLoadingHistory = true;
-    _hasFailed = false;
-    notifyListeners();
-    do {
-      _needsReload = false;
-      try {
-        _items = await _historyManager.obtainHistory();
-        _hasFailed = false;
-      } catch (error) {
-        debugPrint('HistoryViewModel: cannot load the history: $error');
-        _hasFailed = true;
-      }
-    } while (_needsReload);
-    _isLoadingHistory = false;
+  void load() {
+    _items = _historyManager.obtainHistory();
     notifyListeners();
   }
 
@@ -192,23 +150,52 @@ class HistoryViewModel extends ViewModel<HistoryAction> {
     return DateFormat(date.year == now.year ? 'MMM d' : 'MMM d, y', 'en_US').format(date);
   }
 
-  /// Загружает запись целиком и открывает её. При ошибке спрашивает [tryAgain].
-  Future<void> open(HistoryItem item) async {
-    if (_openingId != null) return;
-    _openingId = item.id;
-    notifyListeners();
-
-    final action = await perform<HistoryAction>(
-      () async => switch (item.kind) {
-        HistoryKind.analysis => OpenBreakdown(await _analysisManager.obtainAnalysis(item.id)),
-        HistoryKind.coachConversation => OpenConversation(await _coachManager.obtainConversation(item.id)),
-        HistoryKind.openingLine => OpenOpeningLine(await _openingLineManager.obtainSession(item.id)),
+  /// Открывает запись целиком. Если её уже не прочитать — просто обновляем список.
+  void open(HistoryItem item) {
+    final action = switch (item.kind) {
+      HistoryKind.analysis => switch (_historyManager.obtainBreakdown(item.id)) {
+        final breakdown? => OpenBreakdown(breakdown),
+        null => null,
       },
-    );
+      HistoryKind.coachConversation => switch (_historyManager.obtainConversation(item.id)) {
+        final conversation? => OpenConversation(conversation),
+        null => null,
+      },
+      HistoryKind.openingLine => switch (_historyManager.obtainOpeningLines(item.id)) {
+        final session? => OpenOpeningLines(session),
+        null => null,
+      },
+    };
+    if (action == null) {
+      load();
+    } else {
+      emit(action);
+    }
+  }
 
-    _openingId = null;
+  /// Удалённую запись ещё можно вернуть — видна плашка с «Undo».
+  bool get canUndo => _deleted != null;
+
+  /// Пользователь подтвердил удаление. Список обновится сам — удаление сообщает HistoryMediator.
+  Future<void> delete(HistoryItem item) async {
+    _deleted = await _historyManager.delete(item.id);
     notifyListeners();
-    if (action != null) emit(action);
+  }
+
+  /// «Undo» в плашке: запись возвращается на своё место.
+  Future<void> undo() async {
+    final deleted = _deleted;
+    if (deleted == null) return;
+    _deleted = null;
+    notifyListeners();
+    await _historyManager.restore(deleted);
+  }
+
+  /// Плашка скрылась — вернуть запись уже нельзя.
+  void forgetDeleted() {
+    if (_deleted == null) return;
+    _deleted = null;
+    notifyListeners();
   }
 
   /// «Analyze a chat» сразу открывает галерею — если бесплатные генерации ещё есть.
@@ -232,6 +219,9 @@ class HistoryViewModel extends ViewModel<HistoryAction> {
 
   /// Разбор выбранного скриншота — его ждёт сканирование.
   Future<ChatBreakdown> analyze(Uint8List screenshot) => _analysisManager.analyzeScreenshot(screenshot);
+
+  /// Сканирование дошло до конца — разбор попадает в историю.
+  Future<void> keep(ChatBreakdown breakdown) => _historyManager.saveBreakdown(breakdown);
 
   /// Оформили Cue Plus — лимита больше нет.
   void didSubscribe() => _limit.didSubscribe();

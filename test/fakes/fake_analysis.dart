@@ -5,7 +5,6 @@ import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
-import 'package:dating_assistant/transport/network_error.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
@@ -51,9 +50,6 @@ class FakeAnalysisManager implements AnalysisManager {
 
   final screenshots = <Uint8List>[];
 
-  /// Разборы «на сервере» — их открывают из истории.
-  final saved = <String, ChatBreakdown>{};
-
   @override
   Future<ChatBreakdown> analyzeScreenshot(Uint8List screenshot) async {
     screenshots.add(screenshot);
@@ -61,8 +57,4 @@ class FakeAnalysisManager implements AnalysisManager {
     if (result is ChatBreakdown) return result;
     throw result;
   }
-
-  @override
-  Future<ChatBreakdown> obtainAnalysis(String id) async =>
-      saved[id] ?? (throw const NetworkError(NetworkErrorCode.logical, statusCode: 404));
 }

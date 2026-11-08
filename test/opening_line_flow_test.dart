@@ -1,3 +1,4 @@
+import 'package:connectivity_plus_platform_interface/connectivity_plus_platform_interface.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/presentation/main/main/main_screen.dart';
 import 'package:dating_assistant/presentation/main/main/views/main_tab_bar.dart';
@@ -14,6 +15,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 import 'fakes/fake_analysis.dart';
 import 'fakes/fake_store.dart';
+import 'fakes/fake_connectivity.dart';
+import 'fakes/fake_history.dart';
 
 /// Галерея, в которой пользователь сразу выбирает скриншот анкеты.
 class _FakeImagePicker extends ImagePickerPlatform {
@@ -31,7 +34,9 @@ void main() {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
     InAppPurchasePlatform.instance = FakeStore(isStoreAvailable: false);
     ImagePickerPlatform.instance = _FakeImagePicker();
-    await Injector.configure();
+    // Сеть «есть», а история — в ящике Hive в памяти.
+    ConnectivityPlatform.instance = FakeConnectivity();
+    await Injector.configure(historyBox: await memoryHistoryBox());
     clipboard = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
@@ -125,5 +130,24 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Back'));
     await tester.pumpAndSettle();
     expect(find.byType(OpeningLineSourceScreen), findsOneWidget);
+  });
+
+  testWidgets('when the free lines run out, the screen says so and Go unlimited opens Cue Plus', (tester) async {
+    await openOpeningLine(tester);
+    await tester.tap(find.text('Just give me one'));
+    await waitForServer(tester);
+    for (var index = 0; index < 2; index++) {
+      await tester.tap(find.text('Another one'));
+      await waitForServer(tester);
+    }
+
+    expect(find.text('You’ve used your 3 free generations'), findsOneWidget);
+    expect(find.text('Go unlimited to keep writing.'), findsOneWidget);
+    expect(find.text('0 of 3 free generations left'), findsOneWidget);
+    expect(find.text('Another one'), findsNothing);
+
+    await tester.tap(find.text('Go unlimited'));
+    await tester.pumpAndSettle();
+    expect(find.text('No more counting'), findsOneWidget);
   });
 }

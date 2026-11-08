@@ -5,10 +5,11 @@ import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
 import 'package:dating_assistant/service/coach/coach_manager.dart';
-import 'package:dating_assistant/service/coach/model/attached_chat.dart';
 import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
+import 'package:dating_assistant/service/connectivity/connectivity_manager.dart';
+import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:flutter/foundation.dart';
@@ -66,19 +67,26 @@ typedef ChatCard = ({String title, String? verdict});
 /// быстрым ответом или скриншотом переписки, коуч отвечает советом и готовым сообщением. Открытый из разбора
 /// («Get the next message»), коуч уже знает переписку и сразу пишет, что ответить; открытый из истории —
 /// продолжает разговор с того же места.
+///
+/// Разговор хранится только на устройстве: после каждого ответа он сохраняется в историю, а с каждым
+/// сообщением уходит на сервер целиком.
 class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
   DatingAdviceViewModel({
     ChatBreakdown? breakdown,
     CoachConversation? conversation,
     CoachManager? coachManager,
+    HistoryManager? historyManager,
+    ConnectivityManager? connectivityManager,
     ScreenshotPicker? picker,
     GenerationLimit? limit,
+    DateTime Function()? now,
   }) : _coachManager = coachManager ?? Injector.shared.coachManager,
+       _historyManager = historyManager ?? Injector.shared.historyManager,
+       _connectivityManager = connectivityManager ?? Injector.shared.connectivityManager,
        _picker = picker ?? ScreenshotPicker(),
        _limit = limit ?? GenerationLimit(),
-       _chat = conversation?.chat ?? (breakdown == null ? null : AttachedChat.fromBreakdown(breakdown)),
-       _pendingAnalysisId = breakdown?.id,
-       _conversationId = conversation?.id {
+       _now = now ?? DateTime.now,
+       _conversation = conversation ?? CoachConversation.start(breakdown: breakdown) {
     if (conversation != null) {
       // Приветствие не часть разговора: из истории показываем только то, что в нём было.
       for (final message in conversation.messages) {
@@ -104,14 +112,25 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
   /// С чего начать разговор, пока коуч ничего не ответил.
   static const starters = ['They stopped replying', 'Should I ask them out?', 'Help me start a chat'];
 
-  /// Переписка приложена, а ответа о ней нет (ошибка или лимит) — спросить ещё раз одним нажатием.
+  /// Переписка приложена, а ответа о ней нет (ошибка, лимит или нет сети) — спросить ещё раз одним нажатием.
   static const askAboutChat = 'What should I send next?';
 
   final CoachManager _coachManager;
 
+  final HistoryManager _historyManager;
+
+  final ConnectivityManager _connectivityManager;
+
   final ScreenshotPicker _picker;
 
   final GenerationLimit _limit;
+
+  final DateTime Function() _now;
+
+  StreamSubscription<bool>? _connectivityChanges;
+
+  /// Разговор, каким он уйдёт на сервер и в историю.
+  CoachConversation _conversation;
 
   final _entries = <AdviceEntry>[];
 
@@ -123,19 +142,16 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
 
   var _draft = '';
 
-  AttachedChat? _chat;
-
-  /// Разбор, с которым открыли коуча. Уходит с сообщениями, пока коуч о нём не ответил.
-  String? _pendingAnalysisId;
-
-  /// Разговор на сервере — появляется с первым ответом.
-  String? _conversationId;
-
   var _isReplying = false;
 
   var _isReadingChat = false;
 
   var _isPicking = false;
+
+  var _isOffline = false;
+
+  /// «Not now» в блоке лимита — вместо блока неактивное поле ввода.
+  var _isLimitBlockHidden = false;
 
   List<AdviceEntry> get entries => List.unmodifiable(_entries);
 
@@ -151,24 +167,42 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
 
   CoachTone get tone => _tone;
 
-  /// Бесплатные генерации на этой неделе кончились: поле ввода недоступно, нажатие открывает Cue Plus.
+  /// Сети нет: баннер «No connection» под шапкой, поле ввода и быстрые ответы недоступны.
+  bool get isOffline => _isOffline;
+
+  /// Бесплатные генерации на этой неделе кончились.
   bool get isLimitReached => _limit.isReached;
 
-  bool get canSend => _draft.trim().isNotEmpty && !_isReplying && !isLimitReached;
+  /// Вместо поля ввода — «You’ve used your 3 free messages» с «Go unlimited» и «Not now».
+  bool get showsLimitBlock => isLimitReached && !_isLimitBlockHidden;
+
+  /// Бесплатных сообщений в неделю — для заголовка блока лимита.
+  int get freeLimit => _limit.usage?.limit ?? GenerationLimit.freePerWeek;
+
+  /// Поле ввода работает: есть сеть и бесплатные сообщения.
+  bool get isComposerEnabled => !_isOffline && !isLimitReached;
+
+  bool get canSend => _draft.trim().isNotEmpty && !_isReplying && isComposerEnabled;
 
   /// null — переписки нет. Пока сервер читает новый скриншот — «Reading your chat…».
   ChatCard? get chatCard {
     if (_isReadingChat) return (title: 'Reading your chat…', verdict: null);
-    final chat = _chat;
+    final chat = _conversation.chat;
     if (chat == null) return null;
     return (title: chat.age == null ? chat.name : '${chat.name}, ${chat.age}', verdict: chat.verdict);
   }
 
-  /// Узнаём заранее, остались ли бесплатные генерации. Открыли из разбора — коуч сразу пишет о переписке.
+  /// Узнаём заранее, остались ли бесплатные генерации, и следим за сетью.
+  /// Открыли из разбора — коуч сразу пишет о переписке.
   Future<void> start() async {
     unawaited(_limit.load());
-    if (_pendingAnalysisId != null) await _ask();
+    _connectivityChanges = _connectivityManager.onlineChanges.listen((isOnline) => _setOffline(!isOnline));
+    await checkConnection();
+    if (_conversation.isEmpty && _conversation.breakdown != null) await _ask();
   }
+
+  /// «Retry» в баннере «No connection».
+  Future<void> checkConnection() async => _setOffline(!await _connectivityManager.checkOnline());
 
   /// Перерисовываемся, только когда кнопка отправки меняет состояние, а не на каждую букву.
   void changeDraft(String text) {
@@ -186,7 +220,7 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
 
   /// «+»: скриншот переписки из галереи — коуч прочитает его и ответит о ней.
   Future<void> attachScreenshot() async {
-    if (_isPicking || _isReplying || _openPlusIfLimitReached()) return;
+    if (_isPicking || _isReplying || !_canAsk()) return;
 
     _isPicking = true;
     Uint8List? screenshot;
@@ -208,16 +242,32 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
     notifyListeners();
   }
 
-  /// Нажали на недоступное поле ввода.
-  void openPlus() => emit(const OpenPlus());
+  /// «Go unlimited» в блоке лимита.
+  void goUnlimited() => emit(const OpenPlus());
+
+  /// «Not now»: блок лимита сворачивается в неактивное поле ввода.
+  void hideLimitBlock() {
+    _isLimitBlockHidden = true;
+    notifyListeners();
+  }
+
+  /// Нажали на неактивное поле ввода: без сети ждём её, без бесплатных сообщений — снова блок лимита.
+  void tapDisabledComposer() {
+    if (_isOffline) {
+      checkConnection();
+    } else if (isLimitReached) {
+      _isLimitBlockHidden = false;
+      notifyListeners();
+    }
+  }
 
   /// Оформили Cue Plus — лимита больше нет.
   void didSubscribe() => _limit.didSubscribe();
 
   /// Отправляет сообщение и ждёт ответа. При ошибке спрашивает [tryAgain]; если ответа не будет —
-  /// убирает сообщение из ленты и возвращает текст в поле. Кончились бесплатные — Cue Plus.
+  /// убирает сообщение из ленты и возвращает текст в поле. Кончились бесплатные — блок лимита.
   Future<void> _ask({String? text, Uint8List? screenshot, bool isDraft = false}) async {
-    if (_isReplying || _openPlusIfLimitReached()) return;
+    if (_isReplying || !_canAsk()) return;
 
     final question = text == null ? null : UserEntry(_nextId++, text: text);
     if (question != null) _entries.add(question);
@@ -229,15 +279,13 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
     while (true) {
       try {
         final reply = await _coachManager.send(
-          conversationId: _conversationId,
+          conversation: _conversation,
           text: text,
           tone: _tone,
-          analysisId: _pendingAnalysisId,
           chatScreenshot: screenshot,
         );
-        _conversationId = reply.conversationId;
-        _pendingAnalysisId = null;
-        _chat = reply.chat ?? _chat;
+        _conversation = _conversation.replied(text: text, reply: reply, at: _now());
+        unawaited(_historyManager.saveConversation(_conversation));
         _entries.add(CoachEntry(_nextId++, text: reply.text, suggestion: reply.suggestion));
         _quickReplies = reply.quickReplies;
         break;
@@ -252,7 +300,7 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
         if (isDraft && text != null && _draft.trim().isEmpty) _replaceDraft(text);
         if (isLimit) {
           _limit.didReachLimit();
-          emit(const OpenPlus());
+          _isLimitBlockHidden = false;
         }
         break;
       }
@@ -263,19 +311,29 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
     notifyListeners();
   }
 
+  /// Спросить можно, когда есть сеть и бесплатные сообщения; без них показываем блок лимита.
+  bool _canAsk() {
+    if (_isOffline) return false;
+    if (!_limit.isReached) return true;
+    _isLimitBlockHidden = false;
+    notifyListeners();
+    return false;
+  }
+
+  void _setOffline(bool isOffline) {
+    if (_isOffline == isOffline) return;
+    _isOffline = isOffline;
+    notifyListeners();
+  }
+
   void _replaceDraft(String text) {
     _draft = text;
     emit(ReplaceDraft(text));
   }
 
-  bool _openPlusIfLimitReached() {
-    if (!_limit.isReached) return false;
-    emit(const OpenPlus());
-    return true;
-  }
-
   @override
   void dispose() {
+    _connectivityChanges?.cancel();
     _limit.removeListener(notifyListeners);
     _limit.dispose();
     super.dispose();

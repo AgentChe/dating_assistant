@@ -53,13 +53,24 @@ abstract final class AppIcons {
 
   static const close = 'assets/icons/x.svg';
 
-  static const copy = 'assets/icons/copy.svg';
+  /// Значок ошибки в баннере.
+  static const alertCircle = 'assets/icons/alert_circle.svg';
 
-  static const menu = 'assets/icons/menu.svg';
+  static const info = 'assets/icons/info.svg';
+
+  /// Значок лимита в баннере.
+  static const sparkles = 'assets/icons/sparkles.svg';
+
+  /// Нет сети — значок в баннере.
+  static const wifiOff = 'assets/icons/wifi_off.svg';
+
+  static const copy = 'assets/icons/copy.svg';
 
   static const plus = 'assets/icons/plus.svg';
 
   static const search = 'assets/icons/search.svg';
+
+  static const trash = 'assets/icons/trash.svg';
 
   static const send = 'assets/icons/send.svg';
 

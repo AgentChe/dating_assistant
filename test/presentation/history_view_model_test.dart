@@ -1,74 +1,87 @@
 import 'package:dating_assistant/misc/extensions/history_titles.dart';
 import 'package:dating_assistant/presentation/main/history/history_view_model.dart';
-import 'package:dating_assistant/service/coach/model/coach_tone.dart';
+import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/coach/model/attached_chat.dart';
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
+import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
+import 'package:dating_assistant/service/history/history_mediator.dart';
 import 'package:dating_assistant/service/history/model/history_item.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
-import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/service/usage/model/usage.dart';
-import 'package:dating_assistant/transport/network_error.dart';
+import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_ce/hive_ce.dart';
 
 import '../fakes/fake_analysis.dart';
 import '../fakes/fake_history.dart';
 import '../fakes/fake_managers.dart';
 
 void main() {
-  late MockBackend mock;
+  late ChatBreakdown breakdown;
+  late Box<String> box;
+  late HistoryMediator mediator;
+  late HistoryManager history;
   late List<HistoryAction> actions;
   late FakeScreenshotPicker picker;
 
   /// 8 ноября 2026, 12:00 по местному времени.
   final now = DateTime(2026, 11, 8, 12);
 
-  HistoryViewModel makeViewModel({HistoryManager? historyManager, Usage usage = const Usage(used: 0, limit: 3)}) {
-    final viewModel = HistoryViewModel(
-      now: () => now,
-      historyManager: historyManager ?? mock.history,
-      analysisManager: mock.analysis,
-      coachManager: mock.coach,
-      openingLineManager: mock.openingLines,
-      picker: picker,
-      sessionManager: FakeSessionManager(isPlus: false),
-      usageManager: FakeUsageManager(usage: usage),
-      usageMediator: mock.usageMediator,
-    );
-    viewModel.actions.listen(actions.add);
-    return viewModel;
-  }
-
-  HistoryItem item(HistoryKind kind, {Duration age = Duration.zero, String preview = '', String? name, int? age2}) =>
-      HistoryItem(
-        kind: kind,
-        id: '$kind-$age-$preview',
-        updatedAt: now.subtract(age),
-        preview: preview,
-        partner: name == null ? null : (name: name, age: age2),
-      );
+  setUpAll(() async => breakdown = await exampleBreakdown());
 
   setUp(() async {
-    mock = await mockBackend();
+    box = await memoryHistoryBox();
+    mediator = HistoryMediator();
+    history = HistoryManager(box, mediator);
     actions = [];
     picker = FakeScreenshotPicker();
   });
 
-  test('a new user sees the empty history', () async {
+  HistoryViewModel makeViewModel({Usage usage = const Usage(used: 0, limit: 3)}) {
+    final viewModel = HistoryViewModel(
+      now: () => now,
+      historyManager: history,
+      historyMediator: mediator,
+      analysisManager: FakeAnalysisManager([]),
+      picker: picker,
+      sessionManager: FakeSessionManager(isPlus: false),
+      usageManager: FakeUsageManager(usage: usage),
+      usageMediator: UsageMediator(),
+    )..start();
+    viewModel.actions.listen(actions.add);
+    return viewModel;
+  }
+
+  CoachConversation conversation({AttachedChat? chat, String suggestion = 'coffee thursday?', DateTime? at}) =>
+      CoachConversation.start(at: at ?? now).replied(
+        text: 'Should I ask them out?',
+        reply: CoachReply(
+          id: 'coach-1',
+          text: 'Good instinct.',
+          suggestion: CoachSuggestion(text: suggestion),
+          chat: chat,
+        ),
+        at: at ?? now,
+      );
+
+  OpeningLineSession session(String line, {DateTime? at}) => OpeningLineSession.start(
+    OpeningLine(id: 'line-1', text: line),
+    at: at ?? now,
+  );
+
+  test('a new user sees the empty history', () {
     final viewModel = makeViewModel();
-    expect(viewModel.isLoaded, isFalse);
 
-    viewModel.start();
-    await pumpEventQueue();
-
-    expect(viewModel.isLoaded, isTrue);
     expect(viewModel.isEmpty, isTrue);
   });
 
-  test('everything the user made is listed newest first, with titles and a count', () async {
-    await mock.analysis.analyzeScreenshot(fakeScreenshot);
-    await mock.coach.send(text: 'Should I ask them out?', tone: CoachTone.auto);
-    await mock.openingLines.generate(spice: SpiceLevel.warm);
-    final viewModel = makeViewModel()..start();
-    await pumpEventQueue();
+  test('everything saved is listed newest first, with titles and a count', () async {
+    await history.saveBreakdown(breakdown, at: now.subtract(const Duration(hours: 2)));
+    await history.saveConversation(conversation(at: now.subtract(const Duration(hours: 1))));
+    await history.saveOpeningLines(session('perfect sunday, go'));
+
+    final viewModel = makeViewModel();
 
     expect(viewModel.isEmpty, isFalse);
     expect(viewModel.items.map((item) => item.title), ['Opening line', 'Dating advice', 'Nika, 28']);
@@ -76,16 +89,10 @@ void main() {
   });
 
   test('search looks through titles, names and previews', () async {
-    final viewModel = makeViewModel(
-      historyManager: FakeHistoryManager([
-        [
-          item(HistoryKind.coachConversation, preview: 'coffee thursday?', name: 'Maya'),
-          item(HistoryKind.openingLine, preview: 'mountains over small talk'),
-          item(HistoryKind.analysis, preview: 'Nika is into this', name: 'Nika', age2: 28),
-        ],
-      ]),
-    )..start();
-    await pumpEventQueue();
+    await history.saveConversation(conversation(chat: const AttachedChat(name: 'Maya')));
+    await history.saveOpeningLines(session('mountains over small talk'));
+    await history.saveBreakdown(breakdown);
+    final viewModel = makeViewModel();
 
     viewModel.search('  NIKA ');
     expect(viewModel.items.map((item) => item.title), ['Nika, 28']);
@@ -112,7 +119,9 @@ void main() {
 
   test('time is relative for the last week and a date after that', () {
     final viewModel = makeViewModel();
-    String label(Duration age) => viewModel.timeLabel(item(HistoryKind.analysis, age: age));
+    String label(Duration age) => viewModel.timeLabel(
+      HistoryItem(kind: HistoryKind.analysis, id: 'id', updatedAt: now.subtract(age), preview: ''),
+    );
 
     expect(label(const Duration(seconds: 20)), 'now');
     expect(label(const Duration(minutes: 4)), '4 min');
@@ -123,97 +132,69 @@ void main() {
     expect(label(const Duration(days: 400)), 'Oct 4, 2025');
   });
 
-  test('a breakdown, a conversation and an opening line open with everything loaded', () async {
-    final breakdown = await mock.analysis.analyzeScreenshot(fakeScreenshot);
-    final reply = await mock.coach.send(text: 'Should I ask them out?', tone: CoachTone.auto);
-    final line = await mock.openingLines.generate(
-      spice: SpiceLevel.warm,
-      match: const MatchDetails(name: 'Sam'),
-    );
-    final viewModel = makeViewModel()..start();
-    await pumpEventQueue();
+  test('a breakdown, a conversation and an opening line session open in full', () async {
+    final chat = conversation(at: now.subtract(const Duration(minutes: 1)));
+    final lines = session('perfect sunday, go');
+    await history.saveBreakdown(breakdown, at: now.subtract(const Duration(minutes: 2)));
+    await history.saveConversation(chat);
+    await history.saveOpeningLines(lines);
+    final viewModel = makeViewModel();
     final [lineItem, conversationItem, breakdownItem] = viewModel.items;
 
-    final opening = viewModel.open(breakdownItem);
-    expect(viewModel.openingId, breakdownItem.id);
-    // Пока одна запись грузится, остальные не открываются.
-    await viewModel.open(lineItem);
-    await opening;
-    await viewModel.open(conversationItem);
-    await viewModel.open(lineItem);
+    viewModel
+      ..open(breakdownItem)
+      ..open(conversationItem)
+      ..open(lineItem);
     await pumpEventQueue();
 
-    expect(viewModel.openingId, isNull);
     expect(actions, [
-      isA<OpenBreakdown>().having((action) => action.breakdown.id, 'breakdown', breakdown.id),
+      isA<OpenBreakdown>().having((action) => action.breakdown.nextMove, 'breakdown', breakdown.nextMove),
       isA<OpenConversation>()
-          .having((action) => action.conversation.id, 'conversation', reply.conversationId)
+          .having((action) => action.conversation.id, 'conversation', chat.id)
           .having((action) => action.conversation.messages.first.text, 'first message', 'Should I ask them out?'),
-      isA<OpenOpeningLine>()
-          .having((action) => action.line.text, 'line', line.text)
-          .having((action) => action.line.match?.name, 'match', 'Sam'),
+      isA<OpenOpeningLines>().having((action) => action.session.lines, 'lines', ['perfect sunday, go']),
     ]);
   });
 
-  test('if a record does not load and the user gives up, nothing opens', () async {
-    final viewModel = makeViewModel(
-      historyManager: FakeHistoryManager([
-        [item(HistoryKind.analysis, preview: 'Gone')],
-      ]),
-    )..tryAgain = (_) async => false;
-    viewModel.start();
-    await pumpEventQueue();
+  test('a record that is gone is not opened, the list is read again', () async {
+    await history.saveBreakdown(breakdown);
+    final viewModel = makeViewModel();
+    final item = viewModel.items.single;
+    await box.delete(item.id);
 
-    await viewModel.open(viewModel.items.single);
+    viewModel.open(item);
     await pumpEventQueue();
 
     expect(actions, isEmpty);
-    expect(viewModel.openingId, isNull);
-  });
-
-  test('a failed load shows the error until a retry succeeds', () async {
-    final history = FakeHistoryManager([
-      const NetworkError(NetworkErrorCode.serverNotAvailable),
-      <HistoryItem>[],
-    ]);
-    final viewModel = makeViewModel(historyManager: history)..start();
-    await pumpEventQueue();
-    expect(viewModel.hasFailed, isTrue);
-    expect(viewModel.isLoaded, isFalse);
-
-    await viewModel.load();
-
-    expect(viewModel.hasFailed, isFalse);
     expect(viewModel.isEmpty, isTrue);
   });
 
-  test('a new generation anywhere reloads the history', () async {
-    final viewModel = makeViewModel()..start();
-    await pumpEventQueue();
+  test('anything saved anywhere shows up at once', () async {
+    final viewModel = makeViewModel();
     expect(viewModel.isEmpty, isTrue);
 
-    await mock.coach.send(text: 'They stopped replying', tone: CoachTone.auto);
+    await history.saveConversation(conversation());
     await pumpEventQueue();
 
     expect(viewModel.items.single.kind, HistoryKind.coachConversation);
   });
 
-  test('Analyze a chat opens the gallery and sends the screenshot to the analysis', () async {
-    final viewModel = makeViewModel()..start();
+  test('Analyze a chat opens the gallery, and the finished breakdown lands in the history', () async {
+    final viewModel = makeViewModel();
     await pumpEventQueue();
 
     await viewModel.analyzeChat();
     await pumpEventQueue();
-
     expect(picker.picks, 1);
-    expect(
-      actions.single,
-      isA<AnalyzeScreenshot>().having((action) => action.screenshot, 'screenshot', fakeScreenshot),
-    );
+    expect(actions.single, isA<AnalyzeScreenshot>());
+
+    await viewModel.keep(breakdown);
+    await pumpEventQueue();
+    expect(viewModel.items.single.title, 'Nika, 28');
   });
 
   test('without free generations Analyze a chat offers Cue Plus instead of the gallery', () async {
-    final viewModel = makeViewModel(usage: const Usage(used: 3, limit: 3))..start();
+    final viewModel = makeViewModel(usage: const Usage(used: 3, limit: 3));
     await pumpEventQueue();
 
     await viewModel.analyzeChat();
@@ -221,5 +202,43 @@ void main() {
 
     expect(picker.picks, 0);
     expect(actions.single, isA<OpenPlus>());
+  });
+
+  test('a deleted record can be brought back until the toast goes away', () async {
+    await history.saveBreakdown(breakdown, at: now.subtract(const Duration(minutes: 1)));
+    await history.saveConversation(conversation());
+    final viewModel = makeViewModel();
+    final [chat, analysis] = viewModel.items;
+
+    await viewModel.delete(chat);
+    await pumpEventQueue();
+    expect(viewModel.items.single.id, analysis.id);
+    expect(viewModel.canUndo, isTrue);
+
+    await viewModel.undo();
+    await pumpEventQueue();
+    expect(viewModel.items.map((item) => item.id), [chat.id, analysis.id]);
+    expect(viewModel.canUndo, isFalse);
+
+    // Плашка скрылась — удаление окончательное.
+    await viewModel.delete(analysis);
+    viewModel.forgetDeleted();
+    await viewModel.undo();
+    await pumpEventQueue();
+    expect(viewModel.items.single.id, chat.id);
+  });
+
+  test('deleting the last record leaves the empty history, and Undo brings it back', () async {
+    await history.saveBreakdown(breakdown);
+    final viewModel = makeViewModel();
+
+    await viewModel.delete(viewModel.items.single);
+    await pumpEventQueue();
+    expect(viewModel.isEmpty, isTrue);
+    expect(viewModel.canUndo, isTrue);
+
+    await viewModel.undo();
+    await pumpEventQueue();
+    expect(viewModel.items.single.title, 'Nika, 28');
   });
 }

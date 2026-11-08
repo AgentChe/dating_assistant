@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:dating_assistant/misc/assets.dart';
 import 'package:dating_assistant/misc/components/fade_page_route.dart';
+import 'package:dating_assistant/misc/custom_views/app_dialog.dart';
 import 'package:dating_assistant/misc/custom_views/screen_header.dart';
 import 'package:dating_assistant/misc/custom_views/try_again_sheet.dart';
 import 'package:dating_assistant/presentation/analysis/analyzing/analyzing_view_model.dart';
@@ -55,6 +57,9 @@ class _AnalyzingScreenState<T> extends State<AnalyzingScreen<T>> with SingleTick
   /// а когда ответ готов, добегает до конца.
   late final _progress = AnimationController(vsync: this, duration: const Duration(seconds: 12));
 
+  /// Открытое «Stop analyzing?»: его ответа ждёт и «назад», и пришедший тем временем результат.
+  Future<bool>? _stopQuestion;
+
   @override
   void initState() {
     super.initState();
@@ -74,12 +79,23 @@ class _AnalyzingScreenState<T> extends State<AnalyzingScreen<T>> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    // «Назад» — кнопкой в шапке или системным жестом — сначала спрашивает, остановить ли сканирование.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _askToStop();
+      },
+      child: _content(context),
+    );
+  }
+
+  Widget _content(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 11, 16, 0),
-            child: ScreenHeader(title: 'Analyzing', onBack: () => Navigator.of(context).pop()),
+            child: ScreenHeader(title: 'Analyzing', onBack: _askToStop),
           ),
           Expanded(
             child: Padding(
@@ -101,7 +117,28 @@ class _AnalyzingScreenState<T> extends State<AnalyzingScreen<T>> with SingleTick
     );
   }
 
+  /// «Stop» закрывает сканирование: результат, даже если придёт, никуда не попадёт.
+  Future<void> _askToStop() async {
+    if (_stopQuestion != null) return;
+    final question = AppDialog.show(
+      context,
+      icon: AppIcons.info,
+      title: 'Stop analyzing?',
+      message: 'Your screenshot won’t be saved.',
+      confirmTitle: 'Stop',
+      cancelTitle: 'Keep going',
+    );
+    _stopQuestion = question;
+    final stop = await question;
+    _stopQuestion = null;
+    if (stop && mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _handle(AnalyzingAction<T> action) async {
+    // Пока открыт «Stop analyzing?», результат ждёт решения: после «Stop» его просто выбрасываем.
+    final question = _stopQuestion;
+    if (question != null && await question) return;
+    if (!mounted) return;
     switch (action) {
       case AnalysisFinished(:final result):
         await _progress.animateTo(1, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);

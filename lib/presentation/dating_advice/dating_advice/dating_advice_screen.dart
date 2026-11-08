@@ -4,11 +4,13 @@ import 'dart:math' as math;
 import 'package:dating_assistant/misc/components/measure_size.dart';
 import 'package:dating_assistant/misc/custom_views/blurred_top_bar.dart';
 import 'package:dating_assistant/misc/custom_views/copied_toast.dart';
+import 'package:dating_assistant/misc/custom_views/inline_banner.dart';
 import 'package:dating_assistant/misc/custom_views/try_again_sheet.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/dating_advice_view_model.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/chat_bubble.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/chat_context_card.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/composer.dart';
+import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/limit_block.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/quick_replies.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/suggestion_card.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/views/tone_sheet.dart';
@@ -126,7 +128,23 @@ class _DatingAdviceScreenState extends State<DatingAdviceScreen> {
                   child: BlurredTopBar(
                     title: 'Dating advice',
                     onBack: () => Navigator.of(context).maybePop(),
-                    bottom: card == null ? null : ChatContextCard(title: card.title, verdict: card.verdict),
+                    bottom: !_viewModel.isOffline && card == null
+                        ? null
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (_viewModel.isOffline)
+                                InlineBanner(
+                                  tone: BannerTone.neutral,
+                                  title: 'No connection',
+                                  message: 'Reconnect to send a message.',
+                                  action: 'Retry',
+                                  onAction: _viewModel.checkConnection,
+                                ),
+                              if (_viewModel.isOffline && card != null) const SizedBox(height: 12),
+                              if (card != null) ChatContextCard(title: card.title, verdict: card.verdict),
+                            ],
+                          ),
                   ),
                 ),
               ),
@@ -136,26 +154,40 @@ class _DatingAdviceScreenState extends State<DatingAdviceScreen> {
                 bottom: 0,
                 child: MeasureSize(
                   onChange: (size) => setState(() => _bottomBarHeight = size.height),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (quickReplies.isNotEmpty) ...[
-                        QuickReplies(replies: quickReplies, onTap: _viewModel.sendQuickReply),
-                        const SizedBox(height: 8),
-                      ],
-                      Composer(
-                        controller: _draft,
-                        tone: _viewModel.tone,
-                        isEnabled: !_viewModel.isLimitReached,
-                        canSend: _viewModel.canSend,
-                        onChanged: _viewModel.changeDraft,
-                        onSend: _viewModel.sendDraft,
-                        onAttach: _viewModel.attachScreenshot,
-                        onTone: _viewModel.openTonePicker,
-                        onDisabledTap: _viewModel.openPlus,
-                      ),
-                    ],
-                  ),
+                  child: _viewModel.showsLimitBlock
+                      ? LimitBlock(
+                          freeLimit: _viewModel.freeLimit,
+                          onGoUnlimited: _viewModel.goUnlimited,
+                          onNotNow: _viewModel.hideLimitBlock,
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (quickReplies.isNotEmpty) ...[
+                              // Без сети быстрые ответы видно, но не нажать.
+                              IgnorePointer(
+                                ignoring: _viewModel.isOffline,
+                                child: Opacity(
+                                  opacity: _viewModel.isOffline ? 0.4 : 1,
+                                  child: QuickReplies(replies: quickReplies, onTap: _viewModel.sendQuickReply),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            Composer(
+                              controller: _draft,
+                              tone: _viewModel.tone,
+                              hint: _viewModel.isOffline ? 'You’re offline' : 'Describe your situation',
+                              isEnabled: _viewModel.isComposerEnabled,
+                              canSend: _viewModel.canSend,
+                              onChanged: _viewModel.changeDraft,
+                              onSend: _viewModel.sendDraft,
+                              onAttach: _viewModel.attachScreenshot,
+                              onTone: _viewModel.openTonePicker,
+                              onDisabledTap: _viewModel.tapDisabledComposer,
+                            ),
+                          ],
+                        ),
                 ),
               ),
               Positioned(

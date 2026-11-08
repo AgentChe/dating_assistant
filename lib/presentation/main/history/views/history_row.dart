@@ -1,6 +1,6 @@
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/fonts.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 
 /// Запись истории (row/list из Figma): 3D-иконка, название, когда обновлялась и превью; нажатая — светлее.
 class HistoryRow extends StatefulWidget {
@@ -10,7 +10,6 @@ class HistoryRow extends StatefulWidget {
     required this.title,
     required this.time,
     required this.preview,
-    required this.isOpening,
     required this.onTap,
   });
 
@@ -23,9 +22,6 @@ class HistoryRow extends StatefulWidget {
   final String time;
 
   final String preview;
-
-  /// Запись загружается — вместо времени спиннер.
-  final bool isOpening;
 
   final VoidCallback onTap;
 
@@ -76,13 +72,7 @@ class _HistoryRowState extends State<HistoryRow> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          if (widget.isOpening)
-                            const SizedBox(
-                              height: 18,
-                              child: CupertinoActivityIndicator(radius: 7, color: Appearance.accent),
-                            )
-                          else
-                            Text(widget.time, style: metaStyle.copyWith(color: Appearance.accent)),
+                          Text(widget.time, style: metaStyle.copyWith(color: Appearance.accent)),
                         ],
                       ),
                       const SizedBox(height: 4),

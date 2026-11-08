@@ -1,10 +1,12 @@
 import 'package:dating_assistant/presentation/opening_line/opening_line_source/opening_line_source_view_model.dart';
+import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/model/usage.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_analysis.dart';
+import '../fakes/fake_history.dart';
 import '../fakes/fake_managers.dart';
 import '../fakes/fake_opening_line.dart';
 
@@ -12,12 +14,14 @@ void main() {
   late MockOpeningLines mock;
   late FakeScreenshotPicker picker;
   late FakeUsageManager usageManager;
+  late HistoryManager historyManager;
   late List<OpeningLineSourceAction> actions;
 
   Future<OpeningLineSourceViewModel> makeViewModel() async {
     final viewModel = OpeningLineSourceViewModel(
       picker: picker,
       openingLineManager: mock.manager,
+      historyManager: historyManager,
       profileManager: mock.profileManager,
       limit: GenerationLimit(
         sessionManager: FakeSessionManager(isPlus: false),
@@ -34,7 +38,22 @@ void main() {
     mock = await mockOpeningLines();
     picker = FakeScreenshotPicker();
     usageManager = FakeUsageManager(usage: const Usage(used: 1, limit: 3));
+    historyManager = await memoryHistoryManager();
     actions = [];
+  });
+
+  test('a line the bio scan finished starts a session in the history', () async {
+    final viewModel = await makeViewModel();
+    final line = await viewModel.generateFromBio(fakeScreenshot);
+    // Сканирование ещё не закончилось — в истории пусто.
+    expect(historyManager.obtainHistory(), isEmpty);
+
+    final session = viewModel.keep(line);
+    await pumpEventQueue();
+
+    expect(session.lines, [line.text]);
+    expect(session.match?.name, 'Nika');
+    expect(historyManager.obtainOpeningLines(session.id)?.lines, [line.text]);
   });
 
   test('Upload their bio opens the gallery and scans the picked screenshot', () async {

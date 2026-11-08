@@ -21,4 +21,6 @@ class AttachedChat {
 
   /// «Nika is into this — and doing most of the work.».
   final String? verdict;
+
+  Map<String, dynamic> toJson() => {'name': name, 'age': ?age, 'verdict': ?verdict};
 }

@@ -3,12 +3,16 @@ import 'package:dating_assistant/misc/custom_views/pressable.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:flutter/cupertino.dart';
 
-enum _Kind { accent, dark, secondary, plain }
+enum _Kind { accent, danger, dark, secondary, plain }
 
 /// Кнопка-пилюля из Figma (button/primary): оранжевая основная, чёрная, полупрозрачная или текстовая.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({super.key, required this.title, required this.onPressed, this.isLoading = false})
     : _kind = _Kind.accent;
+
+  /// Красная — необратимое действие в окне подтверждения («Continue» перед удалением).
+  const PrimaryButton.danger({super.key, required this.title, required this.onPressed, this.isLoading = false})
+    : _kind = _Kind.danger;
 
   /// Чёрная с жирным белым текстом — на пастельных карточках («Upload screenshot»).
   const PrimaryButton.dark({super.key, required this.title, required this.onPressed, this.isLoading = false})
@@ -41,6 +45,8 @@ class PrimaryButton extends StatelessWidget {
     final (height, background, foreground) = switch ((_kind, isEnabled)) {
       (_Kind.accent, true) => (52.0, Appearance.accent, Appearance.black),
       (_Kind.accent, false) => (52.0, const Color(0x1FFFFFFF), _disabledForeground),
+      (_Kind.danger, true) => (52.0, const Color(0xFFFF5757), Appearance.black),
+      (_Kind.danger, false) => (52.0, const Color(0x1FFFFFFF), _disabledForeground),
       (_Kind.dark, true) => (52.0, Appearance.black, Appearance.white),
       (_Kind.dark, false) => (52.0, const Color(0x66000000), const Color(0x66FFFFFF)),
       (_Kind.secondary, true) => (48.0, const Color(0x1FFFFFFF), Appearance.white),

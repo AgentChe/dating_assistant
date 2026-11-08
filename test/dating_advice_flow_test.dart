@@ -1,3 +1,4 @@
+import 'package:connectivity_plus_platform_interface/connectivity_plus_platform_interface.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_screen.dart';
 import 'package:dating_assistant/presentation/dating_advice/dating_advice/dating_advice_screen.dart';
@@ -16,6 +17,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 import 'fakes/fake_analysis.dart';
 import 'fakes/fake_store.dart';
+import 'fakes/fake_connectivity.dart';
+import 'fakes/fake_history.dart';
 
 /// Галерея, в которой пользователь сразу выбирает скриншот переписки.
 class _FakeImagePicker extends ImagePickerPlatform {
@@ -33,7 +36,9 @@ void main() {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
     InAppPurchasePlatform.instance = FakeStore(isStoreAvailable: false);
     ImagePickerPlatform.instance = _FakeImagePicker();
-    await Injector.configure();
+    // Сеть «есть», а история — в ящике Hive в памяти.
+    ConnectivityPlatform.instance = FakeConnectivity();
+    await Injector.configure(historyBox: await memoryHistoryBox());
     clipboard = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
@@ -196,24 +201,59 @@ void main() {
     expect(find.textContaining('I read your chat.'), findsOneWidget);
   });
 
-  testWidgets('after three free answers the composer is off and opens Cue Plus', (tester) async {
+  testWidgets('after three free answers the limit block replaces the composer', (tester) async {
     await openDatingAdvice(tester);
 
     await ask(tester, 'Should I ask them out?');
     await ask(tester, 'Give me another option');
     await ask(tester, 'Make it bolder');
 
-    // Счётчик обновился после третьего ответа: поле недоступно, а нажатие на него — Cue Plus.
+    // Счётчик обновился после третьего ответа: вместо поля ввода — блок лимита.
+    expect(find.text('You’ve used your 3 free messages'), findsOneWidget);
+    expect(find.text('Go unlimited to keep the conversation going.'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.byType(QuickReplies), findsNothing);
+    // Ответы коуча остаются: их можно перечитать и скопировать.
+    expect(find.text('Try sending'), findsNWidgets(3));
+
+    await tester.tap(find.text('Go unlimited'));
+    await tester.pumpAndSettle();
+    expect(find.text('No more counting'), findsOneWidget);
+    await tester.tap(find.text('Not now').last);
+    await tester.pumpAndSettle();
+    expect(find.text('No more counting'), findsNothing);
+
+    // «Not now» сворачивает блок в неактивное поле, а нажатие на него возвращает блок.
+    await tester.tap(find.text('Not now'));
+    await tester.pumpAndSettle();
+    expect(find.text('You’ve used your 3 free messages'), findsNothing);
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
     // Само поле нажатия не ловит — их ловит панель вокруг.
     await tester.tap(find.text('Describe your situation'), warnIfMissed: false);
     await tester.pumpAndSettle();
-    expect(find.text('No more counting'), findsOneWidget);
+    expect(find.text('You’ve used your 3 free messages'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('Not now'));
+  testWidgets('offline, the coach says so and waits for the connection', (tester) async {
+    final connectivity = FakeConnectivity(isOnline: false);
+    ConnectivityPlatform.instance = connectivity;
+    await openDatingAdvice(tester);
+
+    expect(find.text('No connection'), findsOneWidget);
+    expect(find.text('Reconnect to send a message.'), findsOneWidget);
+    expect(find.text('You’re offline'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+    // Быстрые ответы видно, но нажатие ничего не отправляет.
+    await tester.tap(find.text('They stopped replying'), warnIfMissed: false);
+    await tester.pump();
+    expect(find.bySemanticsLabel('Coach is typing'), findsNothing);
+
+    connectivity.change(isOnline: true);
     await tester.pumpAndSettle();
-    await tester.tap(await quickReply(tester, 'Give me another option'));
-    await tester.pumpAndSettle();
-    expect(find.text('No more counting'), findsOneWidget);
+    expect(find.text('No connection'), findsNothing);
+    expect(find.text('Describe your situation'), findsOneWidget);
+
+    await ask(tester, 'They stopped replying');
+    expect(find.textContaining('It happens, and it’s usually timing'), findsOneWidget);
   });
 }

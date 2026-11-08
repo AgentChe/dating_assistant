@@ -1,9 +1,12 @@
 import 'package:dating_assistant/presentation/main/home/home_view_model.dart';
+import 'package:dating_assistant/service/history/history_manager.dart';
+import 'package:dating_assistant/service/history/model/history_item.dart';
 import 'package:dating_assistant/service/usage/model/usage.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_analysis.dart';
+import '../fakes/fake_history.dart';
 import '../fakes/fake_managers.dart';
 
 void main() {
@@ -11,6 +14,7 @@ void main() {
   late FakeSessionManager sessionManager;
   late FakeUsageManager usageManager;
   late UsageMediator usageMediator;
+  late HistoryManager historyManager;
   late List<HomeAction> actions;
 
   HomeViewModel makeViewModel({DateTime Function()? now}) {
@@ -18,6 +22,7 @@ void main() {
       now: now,
       picker: picker,
       analysisManager: FakeAnalysisManager([]),
+      historyManager: historyManager,
       sessionManager: sessionManager,
       usageManager: usageManager,
       usageMediator: usageMediator,
@@ -32,7 +37,8 @@ void main() {
     return viewModel;
   }
 
-  setUp(() {
+  setUp(() async {
+    historyManager = await memoryHistoryManager();
     picker = FakeScreenshotPicker();
     sessionManager = FakeSessionManager(isPlus: false);
     usageManager = FakeUsageManager(usage: const Usage(used: 1, limit: 3));
@@ -153,15 +159,24 @@ void main() {
     expect(actions.single, isA<OpenPlus>());
   });
 
-  test('the features and the menu send their actions', () async {
+  test('the features send their actions', () async {
     final viewModel = makeViewModel();
 
     viewModel
       ..openDatingAdvice()
-      ..openOpeningLine()
-      ..openMenu();
+      ..openOpeningLine();
     await pumpEventQueue();
 
-    expect(actions, [isA<OpenDatingAdvice>(), isA<OpenOpeningLine>(), isA<OpenMenu>()]);
+    expect(actions, [isA<OpenDatingAdvice>(), isA<OpenOpeningLine>()]);
+  });
+
+  test('a breakdown the scan finished lands in the history', () async {
+    final breakdown = await exampleBreakdown();
+    final viewModel = makeViewModel();
+
+    await viewModel.keep(breakdown);
+
+    expect(historyManager.obtainHistory().single.kind, HistoryKind.analysis);
+    expect(historyManager.obtainBreakdown(breakdown.id)?.nextMove, breakdown.nextMove);
   });
 }

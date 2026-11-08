@@ -3,6 +3,7 @@ import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
@@ -33,10 +34,6 @@ final class OpenOpeningLine extends HomeAction {
   const OpenOpeningLine();
 }
 
-final class OpenMenu extends HomeAction {
-  const OpenMenu();
-}
-
 /// Вкладка «Main» (аналог HomeViewModel из Swift-проектов): приветствие и входы в три фичи.
 /// «Upload screenshot» сразу открывает галерею — если бесплатные генерации ещё есть.
 class HomeViewModel extends ViewModel<HomeAction> {
@@ -44,12 +41,14 @@ class HomeViewModel extends ViewModel<HomeAction> {
     DateTime Function()? now,
     ScreenshotPicker? picker,
     AnalysisManager? analysisManager,
+    HistoryManager? historyManager,
     SessionManager? sessionManager,
     UsageManager? usageManager,
     UsageMediator? usageMediator,
   }) : _now = now ?? DateTime.now,
        _picker = picker ?? ScreenshotPicker(),
        _analysisManager = analysisManager ?? Injector.shared.analysisManager,
+       _historyManager = historyManager ?? Injector.shared.historyManager,
        _limit = GenerationLimit(
          sessionManager: sessionManager,
          usageManager: usageManager,
@@ -61,6 +60,8 @@ class HomeViewModel extends ViewModel<HomeAction> {
   final ScreenshotPicker _picker;
 
   final AnalysisManager _analysisManager;
+
+  final HistoryManager _historyManager;
 
   final GenerationLimit _limit;
 
@@ -103,13 +104,14 @@ class HomeViewModel extends ViewModel<HomeAction> {
   /// Разбор выбранного скриншота — его ждёт сканирование.
   Future<ChatBreakdown> analyze(Uint8List screenshot) => _analysisManager.analyzeScreenshot(screenshot);
 
+  /// Сканирование дошло до конца — разбор попадает в историю. Остановленное сканирование ничего не сохраняет.
+  Future<void> keep(ChatBreakdown breakdown) => _historyManager.saveBreakdown(breakdown);
+
   /// Оформили Cue Plus — лимита больше нет.
   void didSubscribe() => _limit.didSubscribe();
 
   /// Сервер ответил, что генерации кончились.
   void didReachLimit() => _limit.didReachLimit();
-
-  void openMenu() => emit(const OpenMenu());
 
   void openDatingAdvice() => emit(const OpenDatingAdvice());
 

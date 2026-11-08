@@ -12,6 +12,9 @@ import 'package:flutter/foundation.dart';
 /// Последнее слово за сервером: если лимит неизвестен, генерация уходит на сервер, и он ответит 402.
 /// Сообщает слушателям, когда счётчик обновился.
 class GenerationLimit extends ChangeNotifier {
+  /// Бесплатных генераций в неделю — на случай, когда сервер сказал «хватит» раньше, чем прислал счётчик.
+  static const freePerWeek = 3;
+
   GenerationLimit({SessionManager? sessionManager, UsageManager? usageManager, UsageMediator? usageMediator})
     : _sessionManager = sessionManager ?? Injector.shared.sessionManager,
       _usageManager = usageManager ?? Injector.shared.usageManager {

@@ -88,6 +88,31 @@ class ChatBreakdown {
     );
   }
 
+  /// Тот же JSON, что прислал сервер, — так разбор хранится в истории и уходит коучу.
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> interestLevel(InterestLevel level) => {'level': level.level, 'label': level.label};
+    List<Map<String, dynamic>> signals(List<ChatSignal> signals) => [
+      for (final signal in signals) {'title': signal.title, 'proof': signal.proof},
+    ];
+    Map<String, dynamic> chatVibe(ChatVibe vibe) => {'emoji': vibe.emoji, 'label': vibe.label};
+
+    return {
+      'id': id,
+      'partner': {'name': partner.name, 'age': ?partner.age},
+      'read': {'emoji': read.emoji, 'verdict': read.verdict, 'detail': read.detail},
+      'interest': {'them': interestLevel(theirInterest), 'you': interestLevel(yourInterest)},
+      'word_share': {'them': theirWordShare, 'you': yourWordShare},
+      'going_well': signals(goingWell),
+      'watch_out': signals(watchOut),
+      'topics': [
+        for (final topic in topics) {'emoji': topic.emoji, 'title': topic.title},
+      ],
+      'vibe': {'them': chatVibe(theirVibe), 'you': chatVibe(yourVibe)},
+      'heading': {'label': heading.label, 'trend': heading.trend.name, 'detail': heading.detail},
+      'next_move': nextMove,
+    };
+  }
+
   /// Делений на шкале интереса.
   static const interestSteps = 5;
 

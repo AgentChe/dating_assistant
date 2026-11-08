@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             ListenableBuilder(
               listenable: _viewModel,
-              builder: (context, _) => HomeHeader(greeting: _viewModel.greeting, onMenu: _viewModel.openMenu),
+              builder: (context, _) => HomeHeader(greeting: _viewModel.greeting),
             ),
             const SizedBox(height: 32),
             AnalyzeBanner(onUpload: _viewModel.uploadScreenshot),
@@ -104,7 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
           AnalyzingScreen.route<ChatBreakdown>(
             screenshot: screenshot,
             task: () => _viewModel.analyze(screenshot),
-            onFinished: (breakdown) => navigator.push(ChatBreakdownScreen.route(breakdown, isAnimated: false)),
+            onFinished: (breakdown) {
+              _viewModel.keep(breakdown);
+              navigator.push(ChatBreakdownScreen.route(breakdown, isAnimated: false));
+            },
           ),
         );
         if (outcome == AnalyzingOutcome.limitReached && mounted) {
@@ -118,9 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
       case OpenDatingAdvice():
         // Чат с коучем закрывает таб-бар: внизу у него поле ввода.
         await Navigator.of(context, rootNavigator: true).push(DatingAdviceScreen.route());
-      // TODO: что открывает меню, в макете пока не нарисовано.
-      case OpenMenu():
-        debugPrint('HomeScreen: $action is not implemented yet');
     }
   }
 

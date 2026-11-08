@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
+import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
@@ -39,16 +42,20 @@ class OpeningLineSourceViewModel extends ViewModel<OpeningLineSourceAction> {
   OpeningLineSourceViewModel({
     ScreenshotPicker? picker,
     OpeningLineManager? openingLineManager,
+    HistoryManager? historyManager,
     ProfileManager? profileManager,
     GenerationLimit? limit,
   }) : _picker = picker ?? ScreenshotPicker(),
        _openingLineManager = openingLineManager ?? Injector.shared.openingLineManager,
+       _historyManager = historyManager ?? Injector.shared.historyManager,
        _profileManager = profileManager ?? Injector.shared.profileManager,
        _limit = limit ?? GenerationLimit();
 
   final ScreenshotPicker _picker;
 
   final OpeningLineManager _openingLineManager;
+
+  final HistoryManager _historyManager;
 
   final ProfileManager _profileManager;
 
@@ -86,6 +93,13 @@ class OpeningLineSourceViewModel extends ViewModel<OpeningLineSourceAction> {
     spice: _profileManager.profile?.spice ?? SpiceLevel.warm,
     profileScreenshot: screenshot,
   );
+
+  /// Сканирование дошло до конца — фраза начинает сессию в истории. Остановленное сканирование ничего не сохраняет.
+  OpeningLineSession keep(OpeningLine line) {
+    final session = OpeningLineSession.start(line);
+    unawaited(_historyManager.saveOpeningLines(session));
+    return session;
+  }
 
   /// Оформили Cue Plus — лимита больше нет.
   void didSubscribe() => _limit.didSubscribe();

@@ -97,7 +97,7 @@ class _OpeningLineSourceScreenState extends State<OpeningLineSourceScreen> {
             screenshot: screenshot,
             task: () => _viewModel.generateFromBio(screenshot),
             onFinished: (line) =>
-                navigator.push(OpeningLineScreen.route(match: line.match, firstLine: line, isAnimated: false)),
+                navigator.push(OpeningLineScreen.route(session: _viewModel.keep(line), isAnimated: false)),
           ),
         );
         if (outcome == AnalyzingOutcome.limitReached && mounted) {

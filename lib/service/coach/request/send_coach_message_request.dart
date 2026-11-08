@@ -1,25 +1,27 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/coach/model/attached_chat.dart';
+import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/profile/model/profile.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/transport/api_request.dart';
 
-/// Сообщение коучу — то, что пользователь написал, переписка, которую он показал, или и то и другое.
-/// Без [conversationId] сервер начинает новый разговор.
+/// Сообщение коучу — то, что пользователь написал, скриншот переписки или и то и другое.
+/// Сервер разговоров не хранит: с сообщением уходит всё, что было в разговоре до него.
 class SendCoachMessageRequest extends ApiRequest {
   const SendCoachMessageRequest({
-    this.conversationId,
     this.text,
     required this.tone,
     required this.spice,
     this.you,
-    this.analysisId,
+    this.messages = const [],
+    this.chat,
+    this.breakdown,
     this.chatScreenshot,
   });
-
-  final String? conversationId;
 
   final String? text;
 
@@ -31,8 +33,14 @@ class SendCoachMessageRequest extends ApiRequest {
   /// Ответы пользователя с онбординга: под них нейросеть подстраивает голос.
   final Profile? you;
 
-  /// Разбор переписки, с которого открыли коуча («Get the next message»).
-  final String? analysisId;
+  /// Разговор до этого сообщения, по порядку.
+  final List<CoachMessage> messages;
+
+  /// Переписка, о которой разговор: что сервер прочитал на скриншоте раньше или что известно из разбора.
+  final AttachedChat? chat;
+
+  /// Разбор переписки, из которого открыли коуча («Get the next message»).
+  final ChatBreakdown? breakdown;
 
   /// JPEG переписки — сервер прочитает её и вернёт, что понял, в `chat`. Картинку он не хранит.
   final Uint8List? chatScreenshot;
@@ -47,12 +55,13 @@ class SendCoachMessageRequest extends ApiRequest {
   Map<String, dynamic> get body {
     final screenshot = chatScreenshot;
     return {
-      'conversation_id': ?conversationId,
       'text': ?text,
       'tone': tone.name,
       'spice': spice.name,
       'you': ?you?.toRequestJson(),
-      'analysis_id': ?analysisId,
+      if (messages.isNotEmpty) 'messages': [for (final message in messages) message.toJson()],
+      'chat': ?chat?.toJson(),
+      'breakdown': ?breakdown?.toJson(),
       if (screenshot != null) 'chat_screenshot': base64Encode(screenshot),
     };
   }

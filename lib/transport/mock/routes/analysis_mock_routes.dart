@@ -3,52 +3,18 @@ import 'package:dating_assistant/transport/mock/mock_request.dart';
 import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
-/// Разбор переписки. Мок не читает скриншот: на любую картинку отвечает примером из Figma
-/// и сохраняет разбор для истории — без самой картинки.
+/// Разбор переписки. Мок не читает скриншот: на любую картинку отвечает примером из Figma.
+/// Сервер ничего не хранит — ни картинку, ни разбор: разбор остаётся только в истории на устройстве.
 class AnalysisMockRoutes {
   AnalysisMockRoutes(this._database, {required this.generationTime});
 
-  static const _key = 'analyses';
-
+  /// Тут только счётчик бесплатных генераций.
   final MockDatabase _database;
 
   /// Сколько «думает» нейросеть — чтобы на моках было видно сканирование.
   final Duration generationTime;
 
-  Map<String, MockHandler> get routes => {
-    'POST /api/v1/analyses': _analyze,
-    'GET /api/v1/analyses/:id': _analysis,
-  };
-
-  /// Сохранённый разбор по id — его открывают из истории и просит коуч, открытый из разбора.
-  static Map<String, dynamic>? find(MockDatabase database, String id) =>
-      _saved(database).where((analysis) => analysis['id'] == id).firstOrNull;
-
-  /// С кем переписка и главный вывод — для карточки у коуча и строки в истории.
-  static Map<String, dynamic> chatOf(Map<String, dynamic> analysis) {
-    final partner = analysis['partner'] as Map<String, dynamic>;
-    final read = analysis['read'] as Map<String, dynamic>;
-    return {'name': partner['name'], 'age': ?partner['age'], 'verdict': '${read['verdict']} — ${read['detail']}'};
-  }
-
-  /// Разборы для истории: с кем переписка и главный вывод.
-  static List<Map<String, dynamic>> historyItems(MockDatabase database) => [
-    for (final analysis in _saved(database))
-      {
-        'type': 'analysis',
-        'id': analysis['id'],
-        'updated_at': analysis['created_at'],
-        'preview': chatOf(analysis)['verdict'],
-        'partner': analysis['partner'],
-      },
-  ];
-
-  static List<Map<String, dynamic>> _saved(MockDatabase database) =>
-      (database.read(_key)?['items'] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-
-  Map<String, dynamic> _analysis(MockRequest request) =>
-      find(_database, request.params['id']!) ??
-      (throw const NetworkError(NetworkErrorCode.logical, statusCode: 404, message: 'No such analysis'));
+  Map<String, MockHandler> get routes => {'POST /api/v1/analyses': _analyze};
 
   Future<Map<String, dynamic>> _analyze(MockRequest request) async {
     if ((request.body['screenshot'] as String? ?? '').isEmpty) {
@@ -64,13 +30,7 @@ class AnalysisMockRoutes {
 
     await Future<void>.delayed(generationTime);
 
-    final now = DateTime.now().toUtc();
-    final analysis = {'id': 'analysis-${now.microsecondsSinceEpoch}', 'created_at': now.toIso8601String(), ..._example};
-    final saved = _database.read(_key)?['items'] as List<dynamic>? ?? const [];
-    await _database.write(_key, {
-      'items': [analysis, ...saved],
-    });
-    return analysis;
+    return {'id': 'analysis-${DateTime.now().microsecondsSinceEpoch}', ..._example};
   }
 
   /// Разбор из макета: переписка с Nika про палатку в горах.

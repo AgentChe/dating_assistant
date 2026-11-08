@@ -1,3 +1,4 @@
+import 'package:connectivity_plus_platform_interface/connectivity_plus_platform_interface.dart';
 import 'package:dating_assistant/misc/app.dart';
 import 'package:dating_assistant/misc/custom_views/glass_button.dart';
 import 'package:dating_assistant/misc/injector.dart';
@@ -11,6 +12,8 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import 'fakes/fake_store.dart';
+import 'fakes/fake_connectivity.dart';
+import 'fakes/fake_history.dart';
 
 void main() {
   testWidgets('a new user goes through onboarding and lands on the main screen', (tester) async {
@@ -21,7 +24,9 @@ void main() {
     addTearDown(tester.view.reset);
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
     InAppPurchasePlatform.instance = FakeStore(isStoreAvailable: false);
-    await Injector.configure();
+    // Сеть «есть», а история — в ящике Hive в памяти.
+    ConnectivityPlatform.instance = FakeConnectivity();
+    await Injector.configure(historyBox: await memoryHistoryBox());
 
     Future<void> tap(String text) async {
       await tester.tap(find.text(text).last);

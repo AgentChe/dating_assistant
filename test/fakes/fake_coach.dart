@@ -9,7 +9,6 @@ import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
-import 'package:dating_assistant/transport/network_error.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
@@ -48,24 +47,16 @@ Future<MockCoach> mockCoach() async {
 }
 
 /// Ответ коуча для тестов: совет и сообщение «Try sending».
-CoachReply coachReply({String conversationId = 'conversation-1', String text = 'Keep it light:', AttachedChat? chat}) =>
-    CoachReply(
-      id: 'coach-$text',
-      conversationId: conversationId,
-      text: text,
-      suggestion: const CoachSuggestion(text: 'coffee thursday?'),
-      quickReplies: const ['Make it bolder'],
-      chat: chat,
-    );
+CoachReply coachReply({String text = 'Keep it light:', AttachedChat? chat}) => CoachReply(
+  id: 'coach-$text',
+  text: text,
+  suggestion: const CoachSuggestion(text: 'coffee thursday?'),
+  quickReplies: const ['Make it bolder'],
+  chat: chat,
+);
 
-/// Что ушло коучу.
-typedef SentCoachMessage = ({
-  String? conversationId,
-  String? text,
-  CoachTone tone,
-  String? analysisId,
-  Uint8List? chatScreenshot,
-});
+/// Что ушло коучу: разговор до сообщения и само сообщение.
+typedef SentCoachMessage = ({CoachConversation conversation, String? text, CoachTone tone, Uint8List? chatScreenshot});
 
 /// Коуч без сервера: по очереди отдаёт заданное в тесте и запоминает отправленное.
 /// CoachReply или Future с ним — ответ, всё остальное бросается как ошибка.
@@ -76,28 +67,14 @@ class FakeCoachManager implements CoachManager {
 
   final sent = <SentCoachMessage>[];
 
-  /// Разговоры «на сервере» — их открывают из истории.
-  final conversations = <String, CoachConversation>{};
-
-  @override
-  Future<CoachConversation> obtainConversation(String id) async =>
-      conversations[id] ?? (throw const NetworkError(NetworkErrorCode.logical, statusCode: 404));
-
   @override
   Future<CoachReply> send({
-    String? conversationId,
+    required CoachConversation conversation,
     String? text,
     required CoachTone tone,
-    String? analysisId,
     Uint8List? chatScreenshot,
   }) async {
-    sent.add((
-      conversationId: conversationId,
-      text: text,
-      tone: tone,
-      analysisId: analysisId,
-      chatScreenshot: chatScreenshot,
-    ));
+    sent.add((conversation: conversation, text: text, tone: tone, chatScreenshot: chatScreenshot));
     return switch (results.removeAt(0)) {
       final CoachReply reply => reply,
       final Future<CoachReply> reply => reply,

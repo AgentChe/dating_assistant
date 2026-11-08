@@ -1,6 +1,5 @@
 import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
-import 'package:dating_assistant/transport/mock/routes/analysis_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
@@ -13,76 +12,29 @@ typedef _Reply = ({String topic, String advice, String line, String? why, List<S
 /// Коуч (Dating advice). Мок не читает скриншот и не учитывает тон: на переписку отвечает примером из Figma
 /// про Nika, на текст — заготовкой по теме, которую узнаёт по словам («ask them out», «stopped replying»).
 ///
-/// Разговоры хранит, как настоящий сервер: «Give me another option» и «Make it bolder» относятся к последней
-/// теме, предложенные сообщения не повторяются, а из истории разговор открывается с того же места.
+/// Сервер разговоров не хранит, всё нужное приходит в запросе: «Give me another option» и «Make it bolder»
+/// относятся к теме последнего ответа коуча из `messages`, а уже предложенные там сообщения не повторяются.
 class CoachMockRoutes {
   CoachMockRoutes(this._database, {required this.generationTime});
 
-  static const _key = 'coach_conversations';
-
+  /// Тут только счётчик бесплатных генераций.
   final MockDatabase _database;
 
   /// Сколько «думает» нейросеть — чтобы на моках было видно, как коуч печатает.
   final Duration generationTime;
 
-  Map<String, MockHandler> get routes => {
-    'POST /api/v1/coach/messages': _send,
-    'GET /api/v1/coach/conversations/:id': _conversation,
-  };
-
-  /// Разговоры для истории: последнее, что коуч предложил отправить, и с кем переписка, если её прикладывали.
-  static List<Map<String, dynamic>> historyItems(MockDatabase database) => [
-    for (final MapEntry(key: id, value: conversation as Map<String, dynamic>) in (database.read(_key) ?? {}).entries)
-      {
-        'type': 'coach_conversation',
-        'id': id,
-        'updated_at': conversation['updated_at'],
-        'preview': _preview(conversation),
-        if (conversation['chat'] case {'name': final String name} && final Map<String, dynamic> chat)
-          'partner': {'name': name, 'age': ?chat['age']},
-      },
-  ];
-
-  static String _preview(Map<String, dynamic> conversation) {
-    final last = (conversation['messages'] as List<dynamic>).cast<Map<String, dynamic>>().lastWhere(
-      (message) => message['from'] == 'coach',
-    );
-    return (last['suggestion'] as Map<String, dynamic>?)?['text'] as String? ?? last['text'] as String;
-  }
-
-  /// Разговор целиком — чтобы продолжить его из истории.
-  Map<String, dynamic> _conversation(MockRequest request) {
-    final id = request.params['id']!;
-    final conversation = (_database.read(_key) ?? {})[id] as Map<String, dynamic>?;
-    if (conversation == null) {
-      throw const NetworkError(NetworkErrorCode.logical, statusCode: 404, message: 'No such conversation');
-    }
-    return {
-      'id': id,
-      'chat': ?conversation['chat'],
-      'messages': conversation['messages'],
-      'quick_replies': conversation['quick_replies'],
-    };
-  }
+  Map<String, MockHandler> get routes => {'POST /api/v1/coach/messages': _send};
 
   Future<Map<String, dynamic>> _send(MockRequest request) async {
     final body = request.body;
     final text = (body['text'] as String? ?? '').trim();
     final hasScreenshot = (body['chat_screenshot'] as String? ?? '').isNotEmpty;
-    final analysisId = body['analysis_id'] as String?;
-    if (text.isEmpty && !hasScreenshot && analysisId == null) {
+    final messages = [...?(body['messages'] as List<dynamic>?)?.cast<Map<String, dynamic>>()];
+    final breakdown = body['breakdown'] as Map<String, dynamic>?;
+    // Разговор о переписке начинается со скриншота или с разбора, о котором коуч ещё ничего не сказал.
+    final isAboutNewChat = hasScreenshot || (breakdown != null && messages.isEmpty);
+    if (text.isEmpty && !isAboutNewChat) {
       throw const NetworkError(NetworkErrorCode.logical, statusCode: 400, message: 'The message is empty');
-    }
-
-    final conversations = _database.read(_key) ?? <String, dynamic>{};
-    final conversationId = body['conversation_id'] as String?;
-    final conversation = conversationId == null ? null : conversations[conversationId] as Map<String, dynamic>?;
-    if (conversationId != null && conversation == null) {
-      throw const NetworkError(NetworkErrorCode.logical, statusCode: 404, message: 'No such conversation');
-    }
-    final analysis = analysisId == null ? null : AnalysisMockRoutes.find(_database, analysisId);
-    if (analysisId != null && analysis == null) {
-      throw const NetworkError(NetworkErrorCode.logical, statusCode: 404, message: 'No such analysis');
     }
     if (!await UsageMockRoutes.consumeGeneration(_database)) {
       throw const NetworkError(
@@ -94,52 +46,36 @@ class CoachMockRoutes {
 
     await Future<void>.delayed(generationTime);
 
-    // О какой переписке разговор: новый скриншот, разбор или та, что приложили раньше.
-    final chat = hasScreenshot
-        ? _nika
-        : analysis != null
-        ? AnalysisMockRoutes.chatOf(analysis)
-        : conversation?['chat'] as Map<String, dynamic>?;
-    final used = [...?(conversation?['used'] as List<dynamic>?)?.cast<String>()];
+    final suggested = [
+      for (final message in messages)
+        if ((message['suggestion'] as Map<String, dynamic>?)?['text'] case final String line) line,
+    ];
+    final partner = hasScreenshot
+        ? _nika['name'] as String
+        : (body['chat'] as Map<String, dynamic>?)?['name'] as String? ??
+              (breakdown?['partner'] as Map<String, dynamic>?)?['name'] as String?;
     final reply = _reply(
       text: text.toLowerCase(),
-      hasChat: hasScreenshot || analysis != null,
-      topic: conversation?['topic'] as String?,
-      used: used,
-      partner: chat?['name'] as String?,
+      hasChat: isAboutNewChat,
+      topic: suggested.isEmpty ? null : _topicOfLine(suggested.last),
+      used: suggested,
+      partner: partner,
     );
 
-    final now = DateTime.now().toUtc();
-    final id = conversationId ?? 'conversation-${now.microsecondsSinceEpoch}';
-    final suggestion = {'text': reply.line, 'why': ?reply.why};
-    conversations[id] = {
-      'topic': reply.topic,
-      'chat': ?chat,
-      'used': [...used, reply.line],
-      'messages': [
-        ...?(conversation?['messages'] as List<dynamic>?),
-        {
-          'from': 'you',
-          'text': ?(text.isEmpty ? null : text),
-          'analysis_id': ?analysisId,
-          if (hasScreenshot) 'attached': 'screenshot',
-        },
-        {'from': 'coach', 'text': reply.advice, 'suggestion': suggestion},
-      ],
-      'quick_replies': reply.quickReplies,
-      'updated_at': now.toIso8601String(),
-    };
-    await _database.write(_key, conversations);
-
     return {
-      'id': 'coach-${now.microsecondsSinceEpoch}',
-      'conversation_id': id,
+      'id': 'coach-${DateTime.now().microsecondsSinceEpoch}',
       'text': reply.advice,
-      'suggestion': suggestion,
+      'suggestion': {'text': reply.line, 'why': ?reply.why},
       'quick_replies': reply.quickReplies,
       'chat': ?(hasScreenshot ? _nika : null),
     };
   }
+
+  /// Тема, к которой относится предложенное сообщение: заготовки в темах не повторяются.
+  static String? _topicOfLine(String line) => _topics.entries
+      .where((topic) => topic.value.lines.contains(line) || topic.value.bolder == line)
+      .map((topic) => topic.key)
+      .firstOrNull;
 
   /// Новая переписка — всегда разговор о ней; иначе «ещё вариант» и «смелее» — по последней теме,
   /// а остальное — новая тема по словам из сообщения.

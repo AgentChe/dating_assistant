@@ -18,6 +18,7 @@ class Composer extends StatelessWidget {
     super.key,
     required this.controller,
     required this.tone,
+    this.hint = 'Describe your situation',
     required this.isEnabled,
     required this.canSend,
     required this.onChanged,
@@ -37,7 +38,10 @@ class Composer extends StatelessWidget {
 
   final CoachTone tone;
 
-  /// false — состояние Disabled: бесплатные генерации кончились, нажатие на панель открывает Cue Plus.
+  /// «Describe your situation»; без сети — «You’re offline».
+  final String hint;
+
+  /// false — состояние Disabled: нет сети или кончились бесплатные сообщения.
   final bool isEnabled;
 
   /// Отправка коралловая, когда есть текст и коуч не печатает.
@@ -87,7 +91,7 @@ class Composer extends StatelessWidget {
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
-                      hintText: 'Describe your situation',
+                      hintText: hint,
                       hintStyle: style.copyWith(color: _hintColor),
                       contentPadding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
                     ),

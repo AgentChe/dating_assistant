@@ -15,6 +15,7 @@ class PhraseCard extends StatelessWidget {
     required this.onCopy,
     this.isCopied = false,
     this.isLoading = false,
+    this.isDisabled = false,
   });
 
   /// null — фразы ещё нет, вместо неё спиннер.
@@ -31,9 +32,13 @@ class PhraseCard extends StatelessWidget {
   /// Пишется новая фраза — старая приглушена.
   final bool isLoading;
 
+  /// Состояние Disabled: фраза и иконка на 40%, скопировать нельзя — кончились генерации или фраза не написалась.
+  final bool isDisabled;
+
   @override
   Widget build(BuildContext context) {
     final text = this.text;
+    final isCopyable = text != null && !isLoading && !isDisabled;
     return PastelCard(
       radius: 20,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -55,7 +60,7 @@ class PhraseCard extends StatelessWidget {
                         )
                       : AnimatedOpacity(
                           key: ValueKey(text),
-                          opacity: isLoading ? 0.4 : 1,
+                          opacity: isLoading || isDisabled ? 0.4 : 1,
                           duration: const Duration(milliseconds: 200),
                           child: Text(
                             text,
@@ -66,14 +71,18 @@ class PhraseCard extends StatelessWidget {
               ),
               const SizedBox(width: 20),
               Pressable(
-                onTap: text == null || isLoading ? null : onCopy,
+                onTap: isCopyable ? onCopy : null,
                 semanticLabel: 'Copy',
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 150),
-                  child: SvgIcon(
-                    isCopied ? AppIcons.check : AppIcons.copy,
-                    key: ValueKey(isCopied),
-                    color: Appearance.black,
+                child: AnimatedOpacity(
+                  opacity: isDisabled ? 0.4 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child: SvgIcon(
+                      isCopied ? AppIcons.check : AppIcons.copy,
+                      key: ValueKey(isCopied),
+                      color: Appearance.black,
+                    ),
                   ),
                 ),
               ),

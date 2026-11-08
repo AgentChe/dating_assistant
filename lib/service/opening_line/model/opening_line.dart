@@ -31,13 +31,12 @@ class MatchDetails {
 
 /// Первая фраза для мэтча.
 class OpeningLine {
-  const OpeningLine({required this.id, required this.sessionId, required this.text, this.match});
+  const OpeningLine({required this.id, required this.text, this.match});
 
   factory OpeningLine.fromJson(Map<String, dynamic> json) {
     final match = json['match'] as Map<String, dynamic>?;
     return OpeningLine(
       id: json['id'] as String,
-      sessionId: json['session_id'] as String,
       text: json['line'] as String,
       match: match == null ? null : MatchDetails.fromJson(match),
     );
@@ -45,12 +44,66 @@ class OpeningLine {
 
   final String id;
 
-  /// Сессия фраз для одного мэтча: «Another one» просит следующую в ней же, в истории она одна запись.
-  final String sessionId;
-
   final String text;
 
   /// Что сервер прочитал в анкете со скриншота: следующие фразы просим по нему, скриншот второй раз не шлём.
-  /// Из истории сессия возвращается с тем, что известно о мэтче, — прочитано или введено.
   final MatchDetails? match;
+}
+
+/// Фразы для одного мэтча — одна запись в истории, сколько ни нажимай «Another one».
+/// Сервер ничего не помнит: уже предложенные фразы ему шлём мы.
+class OpeningLineSession {
+  const OpeningLineSession({required this.id, required this.updatedAt, required this.lines, this.match});
+
+  /// Сессия с первой фразой.
+  factory OpeningLineSession.start(OpeningLine line, {MatchDetails? match, DateTime? at}) {
+    final now = at ?? DateTime.now();
+    return OpeningLineSession(
+      id: 'opening-lines-${now.microsecondsSinceEpoch}',
+      updatedAt: now,
+      lines: [line.text],
+      match: match ?? line.match,
+    );
+  }
+
+  factory OpeningLineSession.fromJson(Map<String, dynamic> json) {
+    final match = json['match'] as Map<String, dynamic>?;
+    return OpeningLineSession(
+      id: json['id'] as String,
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      lines: (json['lines'] as List<dynamic>).cast<String>(),
+      match: match == null ? null : MatchDetails.fromJson(match),
+    );
+  }
+
+  final String id;
+
+  final DateTime updatedAt;
+
+  /// Все фразы по порядку, последняя — на экране.
+  final List<String> lines;
+
+  /// Что известно о мэтче: введено или прочитано в анкете.
+  final MatchDetails? match;
+
+  /// Последняя фраза — с ней сессия открывается из истории.
+  OpeningLine get latest => OpeningLine(id: '$id-${lines.length}', text: lines.last, match: match);
+
+  /// Сессия со следующей фразой.
+  OpeningLineSession adding(OpeningLine line, {required DateTime at}) => OpeningLineSession(
+    id: id,
+    updatedAt: at,
+    lines: [...lines, line.text],
+    match: match ?? line.match,
+  );
+
+  Map<String, dynamic> toJson() {
+    final match = this.match;
+    return {
+      'id': id,
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'lines': lines,
+      if (match != null && !match.isEmpty) 'match': match.toJson(),
+    };
+  }
 }

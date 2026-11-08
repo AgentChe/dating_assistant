@@ -1,3 +1,4 @@
+import 'package:connectivity_plus_platform_interface/connectivity_plus_platform_interface.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/presentation/analysis/chat_breakdown/chat_breakdown_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_screen.dart';
@@ -12,6 +13,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 import 'fakes/fake_analysis.dart';
 import 'fakes/fake_store.dart';
+import 'fakes/fake_connectivity.dart';
+import 'fakes/fake_history.dart';
 
 /// Галерея, в которой пользователь сразу выбирает скриншот.
 class _FakeImagePicker extends ImagePickerPlatform {
@@ -35,7 +38,9 @@ void main() {
     InAppPurchasePlatform.instance = FakeStore(isStoreAvailable: false);
     picker = _FakeImagePicker();
     ImagePickerPlatform.instance = picker;
-    await Injector.configure();
+    // Сеть «есть», а история — в ящике Hive в памяти.
+    ConnectivityPlatform.instance = FakeConnectivity();
+    await Injector.configure(historyBox: await memoryHistoryBox());
   });
 
   /// Ждём моки: задержку сети и «нейросеть», потом анимации. Первый кадр строит экран,
@@ -103,5 +108,45 @@ void main() {
 
     expect(picker.picks, 3);
     expect(find.text('No more counting'), findsOneWidget);
+  });
+
+  /// «Upload screenshot» и «назад», пока идёт сканирование.
+  Future<void> askToStop(WidgetTester tester) async {
+    await tester.tap(find.text('Upload screenshot'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.bySemanticsLabel('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Stop analyzing?'), findsOneWidget);
+    expect(find.text('Your screenshot won’t be saved.'), findsOneWidget);
+  }
+
+  testWidgets('back while scanning asks first, and Keep going still shows the breakdown', (tester) async {
+    await openMain(tester);
+    await askToStop(tester);
+
+    // Разбор пришёл, пока открыт вопрос, — и ждёт ответа.
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.text('Stop analyzing?'), findsOneWidget);
+    expect(find.byType(ChatBreakdownScreen), findsNothing);
+
+    await tester.tap(find.text('Keep going'));
+    await waitForServer(tester);
+    expect(find.byType(ChatBreakdownScreen), findsOneWidget);
+  });
+
+  testWidgets('Stop leaves nothing behind: no breakdown and nothing in the history', (tester) async {
+    await openMain(tester);
+    await askToStop(tester);
+
+    await tester.tap(find.text('Stop'));
+    await waitForServer(tester);
+
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.byType(ChatBreakdownScreen), findsNothing);
+    await tester.tap(find.descendant(of: find.byType(MainTabBar), matching: find.text('History')));
+    await waitForServer(tester);
+    expect(find.text('Your conversations land here'), findsOneWidget);
   });
 }

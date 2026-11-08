@@ -11,25 +11,19 @@ class CoachSuggestion {
 
   /// Почему это сработает: «It answers the last message and hands the next question back.».
   final String? why;
+
+  Map<String, dynamic> toJson() => {'text': text, 'why': ?why};
 }
 
 /// Ответ коуча: совет и, если нужно, готовое сообщение.
 class CoachReply {
-  const CoachReply({
-    required this.id,
-    required this.conversationId,
-    required this.text,
-    this.suggestion,
-    this.quickReplies = const [],
-    this.chat,
-  });
+  const CoachReply({required this.id, required this.text, this.suggestion, this.quickReplies = const [], this.chat});
 
   factory CoachReply.fromJson(Map<String, dynamic> json) {
     final suggestion = json['suggestion'] as Map<String, dynamic>?;
     final chat = json['chat'] as Map<String, dynamic>?;
     return CoachReply(
       id: json['id'] as String,
-      conversationId: json['conversation_id'] as String,
       text: json['text'] as String,
       suggestion: suggestion == null ? null : CoachSuggestion.fromJson(suggestion),
       quickReplies: [...?(json['quick_replies'] as List<dynamic>?)?.cast<String>()],
@@ -38,9 +32,6 @@ class CoachReply {
   }
 
   final String id;
-
-  /// Разговор, в котором коуч ответил. Следующие сообщения отправляем в него: предыдущие сервер помнит сам.
-  final String conversationId;
 
   final String text;
 
