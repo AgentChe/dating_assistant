@@ -1,4 +1,6 @@
 PODS:
+  - connectivity_plus (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - image_picker_ios (0.0.1):
     - Flutter
@@ -13,6 +15,7 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - Flutter (from `Flutter`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
@@ -21,6 +24,8 @@ DEPENDENCIES:
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 EXTERNAL SOURCES:
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   Flutter:
     :path: Flutter
   image_picker_ios:
@@ -40,6 +45,7 @@ CHECKOUT OPTIONS:
     :git: https://github.com/AgentChe/OtterScaleiOS.git
 
 SPEC CHECKSUMS:
+  connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   in_app_purchase_storekit: 22cca7d08eebca9babdf4d07d0baccb73325d3c8
