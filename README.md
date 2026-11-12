@@ -151,6 +151,12 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
 фразам — уже предложенные фразы (`previous_lines`). Мок не учитывает тон и узнаёт тему по словам («ask them out»,
 «stopped replying»), а «Give me another option» и «Make it bolder» относит к теме последнего ответа из `messages`.
 
+## Сервер
+
+`server/` — прокси к Gemini на Go (Gin + Genkit) по контракту моков: разбор, первые фразы и коуч. Как запустить,
+проверить и выкатить — в [server/README.md](server/README.md). Проверка контракта с настоящим сервером —
+`test/server_contract_test.dart`: без `--dart-define=CUE_SERVER_URL` она пропускается.
+
 ## История
 
 Разборы, разговоры с коучем и фразы для мэтча хранятся только на устройстве — в Hive (`hive_ce`), ящик `history`
