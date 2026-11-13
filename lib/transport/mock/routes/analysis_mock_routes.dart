@@ -1,15 +1,10 @@
-import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
-import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
 /// Разбор переписки. Мок не читает скриншот: на любую картинку отвечает примером из Figma.
 /// Сервер ничего не хранит — ни картинку, ни разбор: разбор остаётся только в истории на устройстве.
 class AnalysisMockRoutes {
-  AnalysisMockRoutes(this._database, {required this.generationTime});
-
-  /// Тут только счётчик бесплатных генераций.
-  final MockDatabase _database;
+  AnalysisMockRoutes({required this.generationTime});
 
   /// Сколько «думает» нейросеть — чтобы на моках было видно сканирование.
   final Duration generationTime;
@@ -19,13 +14,6 @@ class AnalysisMockRoutes {
   Future<Map<String, dynamic>> _analyze(MockRequest request) async {
     if ((request.body['screenshot'] as String? ?? '').isEmpty) {
       throw const NetworkError(NetworkErrorCode.logical, statusCode: 400, message: 'The screenshot is empty');
-    }
-    if (!await UsageMockRoutes.consumeGeneration(_database)) {
-      throw const NetworkError(
-        NetworkErrorCode.logical,
-        statusCode: 402,
-        message: 'No free generations left this week',
-      );
     }
 
     await Future<void>.delayed(generationTime);

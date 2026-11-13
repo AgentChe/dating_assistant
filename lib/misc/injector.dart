@@ -10,9 +10,9 @@ import 'package:dating_assistant/service/purchase/purchase_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
+import 'package:dating_assistant/service/usage/usage_storage.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
-import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
 import 'package:dating_assistant/transport/rest_api_transport.dart';
 import 'package:hive_ce/hive_ce.dart';
@@ -58,7 +58,7 @@ final class Injector {
 
   late final purchaseManager = PurchaseManager(sessionManager: sessionManager);
 
-  late final usageManager = UsageManager(transport);
+  late final usageManager = UsageManager(DeviceUsageStorage(_preferences), sessionManager, usageMediator);
 
   late final usageMediator = UsageMediator();
 
@@ -68,14 +68,14 @@ final class Injector {
 
   late final connectivityManager = ConnectivityManager();
 
-  late final analysisManager = AnalysisManager(transport, usageMediator);
+  late final analysisManager = AnalysisManager(transport, usageManager);
 
-  late final openingLineManager = OpeningLineManager(transport, profileManager, usageMediator);
+  late final openingLineManager = OpeningLineManager(transport, profileManager, usageManager);
 
-  late final coachManager = CoachManager(transport, profileManager, usageMediator);
+  late final coachManager = CoachManager(transport, profileManager, usageManager);
 
   /// Транспорт к нашему серверу: моки или настоящий API.
   late final ApiTransport transport = GlobalDefinitions.useMocks
-      ? MockApiTransport(server: MockServer(MockDatabase(_preferences)))
+      ? MockApiTransport(server: MockServer())
       : RestApiTransport(baseUrl: GlobalDefinitions.apiBaseUrl);
 }

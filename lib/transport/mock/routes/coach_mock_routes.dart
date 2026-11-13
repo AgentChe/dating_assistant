@@ -1,6 +1,4 @@
-import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
-import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
 /// Заготовки коуча на одну тему: совет, варианты сообщения, смелый вариант и что спросить дальше.
@@ -15,10 +13,7 @@ typedef _Reply = ({String topic, String advice, String line, String? why, List<S
 /// Сервер разговоров не хранит, всё нужное приходит в запросе: «Give me another option» и «Make it bolder»
 /// относятся к теме последнего ответа коуча из `messages`, а уже предложенные там сообщения не повторяются.
 class CoachMockRoutes {
-  CoachMockRoutes(this._database, {required this.generationTime});
-
-  /// Тут только счётчик бесплатных генераций.
-  final MockDatabase _database;
+  CoachMockRoutes({required this.generationTime});
 
   /// Сколько «думает» нейросеть — чтобы на моках было видно, как коуч печатает.
   final Duration generationTime;
@@ -35,13 +30,6 @@ class CoachMockRoutes {
     final isAboutNewChat = hasScreenshot || (breakdown != null && messages.isEmpty);
     if (text.isEmpty && !isAboutNewChat) {
       throw const NetworkError(NetworkErrorCode.logical, statusCode: 400, message: 'The message is empty');
-    }
-    if (!await UsageMockRoutes.consumeGeneration(_database)) {
-      throw const NetworkError(
-        NetworkErrorCode.logical,
-        statusCode: 402,
-        message: 'No free generations left this week',
-      );
     }
 
     await Future<void>.delayed(generationTime);

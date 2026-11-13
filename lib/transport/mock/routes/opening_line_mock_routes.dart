@@ -1,16 +1,10 @@
-import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
-import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
-import 'package:dating_assistant/transport/network_error.dart';
 
 /// Первые фразы. Мок не читает скриншот анкеты: любую считает анкетой Nika из Figma.
 /// Фразы — заготовки по остроте; с именем и интересами мэтча подставляет их.
 /// Сервер ничего не помнит: уже предложенные фразы присылает клиент.
 class OpeningLineMockRoutes {
-  OpeningLineMockRoutes(this._database, {required this.generationTime});
-
-  /// Тут только счётчик бесплатных генераций.
-  final MockDatabase _database;
+  OpeningLineMockRoutes({required this.generationTime});
 
   /// Сколько «думает» нейросеть.
   final Duration generationTime;
@@ -18,14 +12,6 @@ class OpeningLineMockRoutes {
   Map<String, MockHandler> get routes => {'POST /api/v1/opening-lines': _generate};
 
   Future<Map<String, dynamic>> _generate(MockRequest request) async {
-    if (!await UsageMockRoutes.consumeGeneration(_database)) {
-      throw const NetworkError(
-        NetworkErrorCode.logical,
-        statusCode: 402,
-        message: 'No free generations left this week',
-      );
-    }
-
     await Future<void>.delayed(generationTime);
 
     final body = request.body;

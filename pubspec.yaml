@@ -12,6 +12,7 @@ dependencies:
   dio: ^5.11.1
   flutter:
     sdk: flutter
+  flutter_secure_storage: ^11.2.0
   flutter_svg: ^2.3.2
   hive_ce: ^2.23.2
   image_picker: ^1.2.4

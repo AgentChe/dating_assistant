@@ -7,41 +7,37 @@ import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/profile/profile_manager.dart';
+import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
-import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_profile.dart';
+import 'fake_usage.dart';
 
 /// Коуч на моках без задержек, с профилем из онбординга. Разборы — на том же мок-сервере:
-/// коуча можно открыть из разбора, а лимит считается один на всех.
+/// коуча можно открыть из разбора, а счётчик генераций у них общий.
 typedef MockCoach = ({
   CoachManager manager,
   AnalysisManager analysisManager,
   ProfileManager profileManager,
   ApiTransport transport,
-  MockDatabase database,
+  UsageManager usageManager,
   UsageMediator usageMediator,
 });
 
 Future<MockCoach> mockCoach() async {
   final profileManager = await fakeProfileManager();
-  final preferences = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
-  final database = MockDatabase(preferences);
   final usageMediator = UsageMediator();
-  final transport = MockApiTransport(
-    server: MockServer(database, generationTime: Duration.zero),
-    latency: Duration.zero,
-  );
+  final usageManager = memoryUsageManager(usageMediator: usageMediator);
+  final transport = MockApiTransport(server: MockServer(generationTime: Duration.zero), latency: Duration.zero);
   return (
-    manager: CoachManager(transport, profileManager, usageMediator),
-    analysisManager: AnalysisManager(transport, usageMediator),
+    manager: CoachManager(transport, profileManager, usageManager),
+    analysisManager: AnalysisManager(transport, usageManager),
     profileManager: profileManager,
     transport: transport,
-    database: database,
+    usageManager: usageManager,
     usageMediator: usageMediator,
   );
 }

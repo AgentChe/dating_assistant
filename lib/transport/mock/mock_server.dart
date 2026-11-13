@@ -1,25 +1,22 @@
 import 'package:dating_assistant/transport/api_request.dart';
-import 'package:dating_assistant/transport/mock/mock_database.dart';
 import 'package:dating_assistant/transport/mock/mock_request.dart';
 import 'package:dating_assistant/transport/mock/routes/analysis_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/coach_mock_routes.dart';
 import 'package:dating_assistant/transport/mock/routes/opening_line_mock_routes.dart';
-import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 
 /// Фейковый сервер внутри приложения: находит обработчик под запрос.
 ///
-/// Обработчики работают с «сырым» JSON, как настоящий бэкенд, поэтому моки —
-/// это контракт API, по которому потом напишем сервер.
+/// Обработчики работают с «сырым» JSON, как настоящий сервер в server/, и, как он, ничего не хранят:
+/// всё нужное приходит в запросе. Моки — контракт API.
 class MockServer {
   /// [generationTime] — сколько отвечает «нейросеть»; в тестах ноль.
-  MockServer(MockDatabase database, {Duration generationTime = const Duration(seconds: 3)})
+  MockServer({Duration generationTime = const Duration(seconds: 3)})
     : _routes = {
         // Маршруты доменов из transport/mock/routes.
-        ...UsageMockRoutes(database).routes,
-        ...AnalysisMockRoutes(database, generationTime: generationTime).routes,
-        ...OpeningLineMockRoutes(database, generationTime: generationTime).routes,
-        ...CoachMockRoutes(database, generationTime: generationTime).routes,
+        ...AnalysisMockRoutes(generationTime: generationTime).routes,
+        ...OpeningLineMockRoutes(generationTime: generationTime).routes,
+        ...CoachMockRoutes(generationTime: generationTime).routes,
       };
 
   /// Маршруты вида `'GET /api/v1/analyses/:id'` → обработчик.

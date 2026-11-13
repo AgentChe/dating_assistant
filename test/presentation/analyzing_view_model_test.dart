@@ -1,5 +1,6 @@
 import 'package:dating_assistant/presentation/analysis/analyzing/analyzing_view_model.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,7 +34,7 @@ void main() {
   });
 
   test('the generation limit is not retried', () async {
-    final viewModel = makeViewModel([const NetworkError(NetworkErrorCode.logical, statusCode: 402)]);
+    final viewModel = makeViewModel([const GenerationLimitReached()]);
     var questions = 0;
     viewModel.tryAgain = (_) async {
       questions++;

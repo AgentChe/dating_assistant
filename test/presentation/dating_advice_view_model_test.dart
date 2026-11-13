@@ -13,7 +13,6 @@ import 'package:dating_assistant/service/connectivity/connectivity_manager.dart'
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
-import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -42,10 +41,10 @@ void main() {
       historyManager: historyManager,
       connectivityManager: ConnectivityManager(),
       picker: picker ?? FakeScreenshotPicker(),
-      // Лимит считает тот же мок-сервер, что и ответы коуча.
+      // Лимит — тот же счётчик, которым CoachManager считает ответы.
       limit: GenerationLimit(
         sessionManager: FakeSessionManager(isPlus: false),
-        usageManager: UsageManager(mock.transport),
+        usageManager: mock.usageManager,
         usageMediator: mock.usageMediator,
       ),
     );
@@ -57,8 +56,8 @@ void main() {
       viewModel.entries.whereType<UserEntry>().map((entry) => entry.text);
 
   Future<void> useUpFreeMessages() async {
-    for (var index = 0; index < UsageMockRoutes.freeGenerationsPerWeek; index++) {
-      await UsageMockRoutes.consumeGeneration(mock.database);
+    for (var index = 0; index < UsageManager.freePerWeek; index++) {
+      await mock.usageManager.recordGeneration();
     }
   }
 

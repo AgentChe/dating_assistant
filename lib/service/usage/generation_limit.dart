@@ -7,13 +7,13 @@ import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter/foundation.dart';
 
-/// Остались ли бесплатные генерации — чтобы предложить Cue Plus до запроса, а не после.
+/// Остались ли бесплатные генерации — чтобы экран показал лимит до запроса, а не после.
 ///
-/// Последнее слово за сервером: если лимит неизвестен, генерация уходит на сервер, и он ответит 402.
-/// Сообщает слушателям, когда счётчик обновился.
+/// Последнее слово за менеджером генерации: перед запросом он ещё раз проверяет счётчик
+/// (UsageManager.checkLimit). Сообщает слушателям, когда счётчик обновился.
 class GenerationLimit extends ChangeNotifier {
-  /// Бесплатных генераций в неделю — на случай, когда сервер сказал «хватит» раньше, чем прислал счётчик.
-  static const freePerWeek = 3;
+  /// Бесплатных генераций в неделю — пока счётчик не прочитан.
+  static const freePerWeek = UsageManager.freePerWeek;
 
   GenerationLimit({SessionManager? sessionManager, UsageManager? usageManager, UsageMediator? usageMediator})
     : _sessionManager = sessionManager ?? Injector.shared.sessionManager,
@@ -62,7 +62,7 @@ class GenerationLimit extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Сервер ответил, что генерации кончились.
+  /// Менеджер генерации отказал: бесплатные кончились.
   void didReachLimit() {
     _isReached = true;
     notifyListeners();

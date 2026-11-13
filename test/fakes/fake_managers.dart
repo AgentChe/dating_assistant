@@ -79,13 +79,13 @@ class FakeSessionManager implements SessionManager {
   Future<Subscription?> activeSubscription() async => isPlus ? subscription : null;
 }
 
-/// Счётчик генераций без сервера.
+/// Счётчик генераций, заданный в тесте.
 class FakeUsageManager implements UsageManager {
   FakeUsageManager({this.usage = const Usage(used: 0, limit: 3)});
 
   Usage usage;
 
-  /// Если задана — запрос бросает её.
+  /// Если задана — чтение счётчика бросает её.
   Object? error;
 
   @override
@@ -94,4 +94,12 @@ class FakeUsageManager implements UsageManager {
     if (error != null) throw error;
     return usage;
   }
+
+  @override
+  Future<void> checkLimit() async {
+    if (usage.left == 0) throw const GenerationLimitReached();
+  }
+
+  @override
+  Future<void> recordGeneration() async => usage = Usage(used: usage.used + 1, limit: usage.limit);
 }

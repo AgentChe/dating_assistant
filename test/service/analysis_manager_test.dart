@@ -39,7 +39,7 @@ void main() {
     expect(generationsUsed, 1);
   });
 
-  test('after three free generations the server asks for Cue Plus', () async {
+  test('the fourth free generation in a week asks for Cue Plus', () async {
     for (var index = 0; index < 3; index++) {
       await analysisManager.analyzeScreenshot(fakeScreenshot);
     }
@@ -49,7 +49,7 @@ void main() {
         .then<Object?>((_) => null, onError: (Object error) => error);
     await pumpEventQueue();
 
-    expect(error, isA<NetworkError>().having((error) => error.statusCode, 'status', 402));
+    expect(error, isA<GenerationLimitReached>());
     expect(UsageManager.isGenerationLimit(error!), isTrue);
     expect(generationsUsed, 3);
   });

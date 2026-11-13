@@ -5,10 +5,6 @@ import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
-import 'package:dating_assistant/service/usage/usage_manager.dart';
-import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
-import 'package:dating_assistant/transport/mock/mock_server.dart';
-import 'package:dating_assistant/transport/mock/routes/usage_mock_routes.dart';
 import 'package:dating_assistant/transport/network_error.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -55,15 +51,10 @@ void main() {
       openingLineManager: openingLineManager ?? mock.manager,
       historyManager: historyManager,
       profileManager: mock.profileManager,
-      // Лимит считает тот же мок-сервер, что и фразы.
+      // Лимит — тот же счётчик, которым OpeningLineManager считает фразы.
       limit: GenerationLimit(
         sessionManager: FakeSessionManager(isPlus: false),
-        usageManager: UsageManager(
-          MockApiTransport(
-            server: MockServer(mock.database, generationTime: Duration.zero),
-            latency: Duration.zero,
-          ),
-        ),
+        usageManager: mock.usageManager,
         usageMediator: mock.usageMediator,
       ),
     );
@@ -144,8 +135,8 @@ void main() {
     await viewModel.start();
     final line = viewModel.line;
     // Остальные бесплатные потратили на других экранах.
-    await UsageMockRoutes.consumeGeneration(mock.database);
-    await UsageMockRoutes.consumeGeneration(mock.database);
+    await mock.usageManager.recordGeneration();
+    await mock.usageManager.recordGeneration();
 
     await viewModel.generate();
     await pumpEventQueue();

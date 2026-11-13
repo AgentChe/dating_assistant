@@ -151,10 +151,10 @@ void main() {
     final error = await errorOf(mock.manager.send(conversation: CoachConversation.start(), tone: CoachTone.auto));
 
     expect((error! as NetworkError).statusCode, 400);
-    expect((await UsageManager(mock.transport).obtainUsage()).used, 0);
+    expect((await mock.usageManager.obtainUsage()).used, 0);
   });
 
-  test('after three free generations the server asks for Cue Plus', () async {
+  test('the fourth free generation in a week asks for Cue Plus', () async {
     var conversation = CoachConversation.start();
     for (final text in ['Help me start a chat', 'Give me another option', 'Make it bolder']) {
       conversation = await ask(conversation, text);

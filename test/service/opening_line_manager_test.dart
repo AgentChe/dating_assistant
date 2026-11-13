@@ -52,7 +52,7 @@ void main() {
     expect(spicy.text, isNot(soft.text));
   });
 
-  test('after three free generations the server asks for Cue Plus', () async {
+  test('the fourth free generation in a week asks for Cue Plus', () async {
     for (var index = 0; index < 3; index++) {
       await mock.manager.generate(spice: SpiceLevel.warm);
     }
