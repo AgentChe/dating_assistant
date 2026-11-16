@@ -2,10 +2,10 @@
 ///
 /// Адрес сервера можно переопределить при запуске: `flutter run --dart-define=API_BASE_URL=http://localhost:8080`.
 abstract final class GlobalDefinitions {
-  /// Адрес нашего API — сервер из server/ на машине команды. sslip.io — временный адрес, пока нет своего домена.
+  /// Адрес нашего API — сервер из server/ на машине команды.
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://cue.192-81-217-92.sslip.io',
+    defaultValue: 'https://cue.korrekted.com',
   );
 
   /// OtterScale — аналитика и подписки, как в Swift-приложениях.

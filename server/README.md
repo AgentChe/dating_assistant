@@ -35,7 +35,7 @@ go run .
 flutter run --dart-define=API_BASE_URL=http://localhost:8080
 ```
 
-На машине команды он работает по адресу `https://cue.192-81-217-92.sslip.io` (см. «Деплой») — его приложение
+На машине команды он работает по адресу `https://cue.korrekted.com` (см. «Деплой») — его приложение
 берёт по умолчанию.
 
 Проверить руками:
@@ -83,7 +83,7 @@ go test ./...   # без модели: промпты собираются, от
 генерацию):
 
 ```bash
-curl -s https://cue.192-81-217-92.sslip.io/api/v1/analyses -d "{\"screenshot\": \"$(base64 -i testdata/chat.jpg)\"}"
+curl -s https://cue.korrekted.com/api/v1/analyses -d "{\"screenshot\": \"$(base64 -i testdata/chat.jpg)\"}"
 ```
 
 ## Деплой
@@ -107,9 +107,9 @@ curl -s https://cue.192-81-217-92.sslip.io/api/v1/analyses -d "{\"screenshot\": 
 - с `--domain` — сайт nginx из `deploy/nginx-site.conf` (до 16 МБ на запрос, 75 с на ответ) и сертификат через
   `certbot --nginx`. Домен должен уже указывать на 192.81.217.92 (A-запись).
 
-Сейчас сервер работает по адресу `https://cue.192-81-217-92.sslip.io`: sslip.io отвечает на такие имена IP-адресом
-из самого имени, а Let's Encrypt выдаёт для них настоящие сертификаты (certbot продлевает сам). Это временно:
-приложение зависит от чужого сервиса. Для релиза — свой домен с A-записью на 192.81.217.92, затем
+Сервер работает по адресу `https://cue.korrekted.com` (A-запись на 192.81.217.92, сертификат Let's Encrypt —
+certbot продлевает сам). Прежний временный адрес `https://cue.192-81-217-92.sslip.io` пока тоже работает: на него
+ходят сборки, собранные до перехода на домен. Перейти на другой домен — A-запись на 192.81.217.92, затем
 `./deploy/deploy.sh --domain <домен>` и новый адрес в `GlobalDefinitions.apiBaseUrl`.
 
 Логи службы: `sudo journalctl -u cue-server -f`. Другой вариант выкладки — `Dockerfile`: внутри тот же бинарник.

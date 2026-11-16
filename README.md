@@ -12,8 +12,8 @@ flutter pub get
 flutter run
 ```
 
-Приложение ходит на наш сервер (`server/`, развёрнут на машине команды): `https://cue.192-81-217-92.sslip.io` —
-временный адрес, пока нет своего домена. Локальный сервер с Mac — по адресу:
+Приложение ходит на наш сервер (`server/`, развёрнут на машине команды): `https://cue.korrekted.com`.
+Локальный сервер с Mac — по адресу:
 
 ```bash
 flutter run --dart-define=API_BASE_URL=http://localhost:8080
