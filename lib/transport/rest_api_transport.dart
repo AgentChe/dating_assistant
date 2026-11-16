@@ -6,9 +6,8 @@ import 'package:flutter/foundation.dart';
 
 /// Транспорт к нашему серверу на базе dio (аналог RestAPITransport).
 class RestApiTransport implements ApiTransport {
-  RestApiTransport({required String baseUrl, Map<String, String> Function()? defaultHeaders})
-    : _defaultHeaders = defaultHeaders,
-      _dio = Dio(
+  RestApiTransport({required String baseUrl, this._defaultHeaders})
+    : _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 30),

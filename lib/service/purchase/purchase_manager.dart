@@ -17,9 +17,8 @@ import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 /// Каждую покупку он отдаёт на валидацию в OtterScale и подтверждает магазину, а покупка
 /// и восстановление завершаются, когда OtterScale провалидировал чек.
 class PurchaseManager {
-  PurchaseManager({required SessionManager sessionManager, OtterScale? otterScale})
-    : _sessionManager = sessionManager,
-      _otterScale = otterScale ?? OtterScale.shared;
+  PurchaseManager({required this._sessionManager, OtterScale? otterScale})
+    : _otterScale = otterScale ?? OtterScale.shared;
 
   /// Сколько ждём валидацию чека, прежде чем проверить подписку как есть.
   static const _validationTimeout = Duration(seconds: 30);

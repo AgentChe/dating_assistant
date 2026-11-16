@@ -9,10 +9,8 @@ import 'package:flutter/foundation.dart';
 /// OtterScale выдаёт анонимный идентификатор при установке, а после покупки — внутренний.
 /// Ими будем подписывать запросы к нашему серверу; подписку проверяем тоже через SDK.
 class SessionManager {
-  SessionManager({required String host, required String apiKey, OtterScale? otterScale})
-    : _host = host,
-      _apiKey = apiKey,
-      _otterScale = otterScale ?? OtterScale.shared;
+  SessionManager({required this._host, required this._apiKey, OtterScale? otterScale})
+    : _otterScale = otterScale ?? OtterScale.shared;
 
   final String _host;
 

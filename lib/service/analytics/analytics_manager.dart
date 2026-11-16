@@ -24,12 +24,10 @@ abstract final class AnalyticsEvents {
 /// в Amplitude, а для каждого нового id один раз приходит событие UserIDSynced.
 class AnalyticsManager {
   AnalyticsManager({
-    required SessionManager sessionManager,
-    required SharedPreferencesWithCache preferences,
+    required this._sessionManager,
+    required this._preferences,
     AnalyticsClient? client,
-  }) : _sessionManager = sessionManager,
-       _preferences = preferences,
-       _client = client ?? AmplitudeAnalyticsClient();
+  }) : _client = client ?? AmplitudeAnalyticsClient();
 
   static const _firstLaunchKey = 'analytics.first_launch_logged';
 

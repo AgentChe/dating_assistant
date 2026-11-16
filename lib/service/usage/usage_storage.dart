@@ -13,8 +13,7 @@ abstract interface class UsageStorage {
 /// поэтому переустановка не возвращает бесплатные генерации. На Android похожего места нет:
 /// там счётчик в настройках приложения и стирается вместе с ним.
 class DeviceUsageStorage implements UsageStorage {
-  DeviceUsageStorage(this._preferences, {FlutterSecureStorage keychain = const FlutterSecureStorage()})
-    : _keychain = keychain;
+  DeviceUsageStorage(this._preferences, {this._keychain = const FlutterSecureStorage()});
 
   static const _key = 'free_generations';
 

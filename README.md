@@ -12,6 +12,11 @@ flutter pub get
 flutter run
 ```
 
+Нужен Flutter 3.47.9 (Dart 3.13.7) — одна версия на всех машинах, `pubspec.yaml` требует Dart ^3.13.7. На iOS плагины
+подключает Swift Package Manager (во Flutter 3.47 он включён по умолчанию), а OtterScaleiOS — CocoaPods. Перед
+архивом в Xcode выполните `flutter build ios --config-only --release`: команда подготовит пакеты плагинов, поды
+и `Generated.xcconfig`, не собирая приложение.
+
 Приложение ходит на наш сервер (`server/`, развёрнут на машине команды): `https://cue.korrekted.com`.
 Локальный сервер с Mac — по адресу:
 

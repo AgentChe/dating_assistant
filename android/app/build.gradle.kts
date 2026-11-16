@@ -56,6 +56,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("com.squareup.okhttp3:okhttp:5.4.0")
+    // OtterScale ссылается на HttpLoggingInterceptor: без библиотеки release-сборку останавливает R8.
+    implementation("com.squareup.okhttp3:logging-interceptor:5.4.0")
     implementation("com.google.code.gson:gson:2.14.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("androidx.core:core-ktx:1.18.0")
