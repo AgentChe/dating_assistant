@@ -12,11 +12,16 @@ flutter pub get
 flutter run
 ```
 
-По умолчанию приложение работает на моках. Когда появится сервер:
+Приложение ходит на наш сервер (`server/`, развёрнут на машине команды): `https://cue.192-81-217-92.sslip.io` —
+временный адрес, пока нет своего домена. Без сервера — на моках, а локальный сервер с Mac — по адресу:
 
 ```bash
-flutter run --dart-define=USE_MOCKS=false --dart-define=API_BASE_URL=http://localhost:8080
+flutter run --dart-define=USE_MOCKS=true
+flutter run --dart-define=API_BASE_URL=http://localhost:8080
 ```
+
+Тесты всегда работают на моках: `GlobalDefinitions.useMocks` узнаёт `flutter test` по переменной окружения
+FLUTTER_TEST.
 
 Тесты и анализатор:
 

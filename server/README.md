@@ -32,8 +32,11 @@ go run .
 Сервер слушает `http://localhost:8080`. Приложение ходит в него так:
 
 ```bash
-flutter run --dart-define=USE_MOCKS=false --dart-define=API_BASE_URL=http://localhost:8080
+flutter run --dart-define=API_BASE_URL=http://localhost:8080
 ```
+
+На машине команды он работает по адресу `https://cue.192-81-217-92.sslip.io` (см. «Деплой») — его приложение
+берёт по умолчанию.
 
 Проверить руками:
 
@@ -81,6 +84,7 @@ go test ./...   # без модели: промпты собираются, от
 
 ```bash
 cd .. && flutter test test/server_contract_test.dart --dart-define=CUE_SERVER_URL=http://localhost:8080
+cd .. && flutter test test/server_contract_test.dart --dart-define=CUE_SERVER_URL=https://cue.192-81-217-92.sslip.io
 ```
 
 ## Деплой
@@ -103,5 +107,10 @@ cd .. && flutter test test/server_contract_test.dart --dart-define=CUE_SERVER_UR
   cue); ключ идёт по ssh через stdin и не попадает ни в аргументы команд, ни в логи;
 - с `--domain` — сайт nginx из `deploy/nginx-site.conf` (до 16 МБ на запрос, 75 с на ответ) и сертификат через
   `certbot --nginx`. Домен должен уже указывать на 192.81.217.92 (A-запись).
+
+Сейчас сервер работает по адресу `https://cue.192-81-217-92.sslip.io`: sslip.io отвечает на такие имена IP-адресом
+из самого имени, а Let's Encrypt выдаёт для них настоящие сертификаты (certbot продлевает сам). Это временно:
+приложение зависит от чужого сервиса. Для релиза — свой домен с A-записью на 192.81.217.92, затем
+`./deploy/deploy.sh --domain <домен>` и новый адрес в `GlobalDefinitions.apiBaseUrl`.
 
 Логи службы: `sudo journalctl -u cue-server -f`. Другой вариант выкладки — `Dockerfile`: внутри тот же бинарник.

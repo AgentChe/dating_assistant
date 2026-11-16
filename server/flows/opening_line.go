@@ -50,11 +50,12 @@ func tidyMatch(match *model.MatchDetails) *model.MatchDetails {
 	if match == nil {
 		return nil
 	}
+	// Просили до 120 символов в message и до пяти интересов: вдвое длиннее — это уже не прочитанная анкета.
 	tidy := model.MatchDetails{
-		Name:      strings.TrimSpace(match.Name),
+		Name:      tidyName(match.Name),
 		Age:       plausibleAge(match.Age),
-		Message:   strings.TrimSpace(match.Message),
-		Interests: strings.TrimSpace(match.Interests),
+		Message:   shortOrEmpty(match.Message, 240),
+		Interests: shortOrEmpty(match.Interests, 160),
 	}
 	if tidy == (model.MatchDetails{}) {
 		return nil

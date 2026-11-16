@@ -320,3 +320,22 @@ func TestTidyingWhatTheSchemaCannotCheck(t *testing.T) {
 		}
 	}
 }
+
+func TestNamesWithTheModelsReasoningInsideAreCut(t *testing.T) {
+	for name, want := range map[string]string{
+		"Sam":        "Sam",
+		" Mary Ann ": "Mary Ann",
+		"Nika, 28":   "Nika, 28",
+		"Sam customer profile name is Sam, age 27, interests climbing, coffee, tacos, live music, message 'Weekend climber' or similar. Let's strictly follow schema guidelines and provide concise data:": "Sam",
+		"The match's name is not visible on the screenshot, so the user should ask": "",
+		"name: unknown": "",
+		"":              "",
+	} {
+		if got := tidyName(name); got != want {
+			t.Errorf("tidyName(%q) = %q, want %q", name, got, want)
+		}
+	}
+	if got := shortOrEmpty(strings.Repeat("climbing, ", 30), 160); got != "" {
+		t.Errorf("an overlong field must be dropped, got %q", got)
+	}
+}

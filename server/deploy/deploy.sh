@@ -42,7 +42,9 @@ ssh "$TARGET" "set -e
   sudo systemctl daemon-reload
   sudo systemctl enable --quiet cue-server
   sudo systemctl restart cue-server
-  curl -fsS --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:$PORT/healthz >/dev/null
+  # Служба поднимается за доли секунды: ждём её молча и только потом проверяем с выводом ошибки.
+  for attempt in \$(seq 1 20); do curl -fs http://127.0.0.1:$PORT/healthz >/dev/null && break; sleep 0.5; done
+  curl -fsS http://127.0.0.1:$PORT/healthz >/dev/null
   echo '  служба работает'"
 
 if [[ -n "$DOMAIN" ]]; then

@@ -66,9 +66,10 @@ func tidyCoachReply(reply *model.CoachReply, hasScreenshot bool) {
 
 	// Карточка «Chat attached» — только о новом скриншоте: о прежней переписке приложение уже знает.
 	if chat := reply.Chat; chat != nil && hasScreenshot {
-		chat.Name = orDefault(chat.Name, unknownMatch)
+		chat.Name = orDefault(tidyName(chat.Name), unknownMatch)
 		chat.Age = plausibleAge(chat.Age)
-		chat.Verdict = strings.TrimSpace(chat.Verdict)
+		// Просили до 10 слов: заметно длиннее — не вывод, а рассуждения, карточка обойдётся без него.
+		chat.Verdict = shortOrEmpty(chat.Verdict, 120)
 	} else {
 		reply.Chat = nil
 	}

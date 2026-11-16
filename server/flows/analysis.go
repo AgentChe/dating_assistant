@@ -47,7 +47,7 @@ func analyzeChat(ctx context.Context, g *genkit.Genkit, m ai.ModelArg, req model
 
 // tidyBreakdown страхует то, что схема не проверит: подпись под уровнем, сумму долей, длину списков.
 func tidyBreakdown(b *model.ChatBreakdown) {
-	b.Partner.Name = orDefault(b.Partner.Name, unknownMatch)
+	b.Partner.Name = orDefault(tidyName(b.Partner.Name), unknownMatch)
 	b.Partner.Age = plausibleAge(b.Partner.Age)
 	tidyInterest(&b.Interest.Them)
 	tidyInterest(&b.Interest.You)
@@ -95,19 +95,4 @@ func tidySignals(signals []model.ChatSignal) []model.ChatSignal {
 		}
 	}
 	return result
-}
-
-// plausibleAge — возраст, если он похож на правду, иначе 0 (в ответе поля не будет).
-func plausibleAge(age int) int {
-	if age < 1 || age > 120 {
-		return 0
-	}
-	return age
-}
-
-func orDefault(value, fallback string) string {
-	if value = strings.TrimSpace(value); value != "" {
-		return value
-	}
-	return fallback
 }
