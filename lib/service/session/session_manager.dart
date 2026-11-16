@@ -65,18 +65,15 @@ class SessionManager {
   /// Появился или сменился внутренний идентификатор — после покупки или восстановления.
   Stream<void> get userIdChanges => _userIdChanges.stream;
 
-// TODO: 
   Future<bool> hasActiveSubscriptions() async {
     if (!isEnabled) return false;
 
-    return true;
-
-    // try {
-    //   return await _otterScale.hasActiveSubscription();
-    // } catch (error) {
-    //   debugPrint('SessionManager: cannot check the subscription: $error');
-    //   return false;
-    // }
+    try {
+      return await _otterScale.hasActiveSubscription();
+    } catch (error) {
+      debugPrint('SessionManager: cannot check the subscription: $error');
+      return false;
+    }
   }
 
   /// Действующая подписка с датой и статусом; null — подписки нет, SDK выключен или не ответил.

@@ -22,12 +22,10 @@ abstract final class GlobalDefinitions {
   static const applicationTag = 'DATING_ASSISTANT';
 
   /// Годовая подписка Cue Plus — одинаковый id в App Store и Google Play.
-  // TODO: вписать id годовой подписки, когда создадим продукт в App Store.
-  static const paygateYearlyId = '';
+  static const paygateYearlyId = 'cue.datingassistant.yearly';
 
   /// Недельная подписка Cue Plus.
-  // TODO: вписать id недельной подписки, когда создадим продукт в App Store.
-  static const paygateWeeklyId = '';
+  static const paygateWeeklyId = 'cue.datingassistant.weekly';
 
   static const termsOfServiceUrl = 'https://appdilla.com/terms';
 
