@@ -65,7 +65,7 @@ class AnalyticsManager {
     await _syncUserId();
   }
 
-  /// До [start] события никуда не уходят: экраны в тестах обходятся без Amplitude.
+  /// До [start] события никуда не уходят: Amplitude запускается со сплэша.
   void logEvent(String name, [Map<String, Object?> properties = const {}]) {
     if (!_isStarted) return;
 

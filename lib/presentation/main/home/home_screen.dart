@@ -15,17 +15,14 @@ import 'package:flutter/material.dart';
 
 /// Вкладка «Main» (аналог HomeViewController): приветствие, разбор переписки, советы коуча и первая фраза.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.viewModel});
-
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final HomeViewModel? viewModel;
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final _viewModel = widget.viewModel ?? HomeViewModel();
+  late final _viewModel = HomeViewModel();
 
   late final StreamSubscription<HomeAction> _actions;
 

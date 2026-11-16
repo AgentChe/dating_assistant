@@ -1,10 +1,8 @@
 import 'package:dating_assistant/transport/api_request.dart';
 
-/// Транспорт, через который сервисы ходят в API.
+/// Транспорт, через который сервисы ходят в API (реализация — RestApiTransport).
 ///
-/// Реализации: RestApiTransport — настоящий сервер, MockApiTransport — моки.
-/// Сервисы знают только этот интерфейс, поэтому переход с моков на сервер —
-/// замена реализации в одном месте (Injector).
+/// Сервисы знают только этот интерфейс, а реализацию выбирает Injector.
 abstract interface class ApiTransport {
   /// Выполняет [request] и возвращает тело ответа.
   ///

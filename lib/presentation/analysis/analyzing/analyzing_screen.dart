@@ -22,7 +22,6 @@ class AnalyzingScreen<T> extends StatefulWidget {
     required this.screenshot,
     required this.task,
     required this.onFinished,
-    this.viewModel,
   });
 
   static Route<AnalyzingOutcome> route<T>({
@@ -41,15 +40,12 @@ class AnalyzingScreen<T> extends StatefulWidget {
   /// Ответ готов. Вызывается до того, как сканирование закроется, — чтобы под ним уже был следующий экран.
   final void Function(T result) onFinished;
 
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final AnalyzingViewModel<T>? viewModel;
-
   @override
   State<AnalyzingScreen<T>> createState() => _AnalyzingScreenState<T>();
 }
 
 class _AnalyzingScreenState<T> extends State<AnalyzingScreen<T>> with SingleTickerProviderStateMixin {
-  late final _viewModel = widget.viewModel ?? AnalyzingViewModel<T>(task: widget.task);
+  late final _viewModel = AnalyzingViewModel<T>(task: widget.task);
 
   late final StreamSubscription<AnalyzingAction<T>> _actions;
 

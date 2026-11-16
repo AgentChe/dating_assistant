@@ -20,17 +20,14 @@ import 'package:url_launcher/url_launcher.dart';
 /// Вкладка «Profile» (аналог ProfileViewController): ответы с онбординга, которые можно поменять,
 /// острота по умолчанию и план.
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, this.viewModel});
-
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final ProfileViewModel? viewModel;
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final _viewModel = widget.viewModel ?? ProfileViewModel();
+  late final _viewModel = ProfileViewModel();
 
   late final StreamSubscription<ProfileAction> _actions;
 

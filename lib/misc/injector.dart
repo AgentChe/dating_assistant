@@ -14,18 +14,13 @@ import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:dating_assistant/service/usage/usage_storage.dart';
 import 'package:dating_assistant/transport/api_transport.dart';
-import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
-import 'package:dating_assistant/transport/mock/mock_server.dart';
 import 'package:dating_assistant/transport/rest_api_transport.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Сборка зависимостей — единственное место, где решается, какие реализации
-/// использует приложение (моки или настоящий сервер).
-///
-/// ViewModel по умолчанию берут менеджеры отсюда, а в тестах им можно передать
-/// свои реализации через конструктор.
+/// Сборка зависимостей (аналог lazy var manager в Swift-проектах): ViewModel по умолчанию берут менеджеры отсюда,
+/// а через конструктор им можно передать другие.
 final class Injector {
   Injector._(this._preferences, this._historyBox);
 
@@ -33,12 +28,12 @@ final class Injector {
 
   static Injector get shared => _shared ?? (throw StateError('Call Injector.configure() before runApp()'));
 
-  /// Вызывается один раз в main() до runApp(). [historyBox] — для тестов: ящик Hive в памяти.
-  static Future<void> configure({Box<String>? historyBox}) async {
+  /// Вызывается один раз в main() до runApp().
+  static Future<void> configure() async {
     final preferences = await SharedPreferencesWithCache.create(
       cacheOptions: const SharedPreferencesWithCacheOptions(),
     );
-    _shared = Injector._(preferences, historyBox ?? await _openHistory());
+    _shared = Injector._(preferences, await _openHistory());
   }
 
   /// История лежит в Application Support: её не видно в «Файлах», и система не чистит её, как кэш.
@@ -81,8 +76,6 @@ final class Injector {
 
   late final coachManager = CoachManager(transport, profileManager, usageManager, aiConsentManager);
 
-  /// Транспорт к нашему серверу: моки или настоящий API.
-  late final ApiTransport transport = GlobalDefinitions.useMocks
-      ? MockApiTransport(server: MockServer())
-      : RestApiTransport(baseUrl: GlobalDefinitions.apiBaseUrl);
+  /// Транспорт к нашему серверу (server/).
+  late final ApiTransport transport = RestApiTransport(baseUrl: GlobalDefinitions.apiBaseUrl);
 }

@@ -35,10 +35,6 @@ target 'Runner' do
   # Аналитика и подписки; Dart-обёртка — lib/misc/analytics/otter_scale.dart.
   # Тегов версий в репозитории нет, как и в car_connect берём основную ветку — коммит фиксирует Podfile.lock.
   pod 'OtterScaleiOS', :git => 'https://github.com/AgentChe/OtterScaleiOS.git'
-
-  target 'RunnerTests' do
-    inherit! :search_paths
-  end
 end
 
 post_install do |installer|

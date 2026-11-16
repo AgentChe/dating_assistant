@@ -23,17 +23,14 @@ import 'package:flutter/material.dart';
 /// Вкладка «History» (аналог HistoryViewController): разборы, разговоры с коучем и первые фразы, новые сверху.
 /// Запись открывается во вкладке, а коуч — поверх таб-бара, как и с главной.
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key, this.viewModel});
-
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final HistoryViewModel? viewModel;
+  const HistoryScreen({super.key});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  late final _viewModel = widget.viewModel ?? HistoryViewModel();
+  late final _viewModel = HistoryViewModel();
 
   late final StreamSubscription<HistoryAction> _actions;
 

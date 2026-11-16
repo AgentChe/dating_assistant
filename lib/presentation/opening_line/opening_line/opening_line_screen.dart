@@ -16,7 +16,7 @@ import 'package:flutter/services.dart';
 /// «Opening line» (аналог OpeningLineViewController): готовая фраза, острота и «Another one».
 /// Открывается во вкладке, таб-бар остаётся.
 class OpeningLineScreen extends StatefulWidget {
-  const OpeningLineScreen({super.key, this.match, this.session, this.viewModel});
+  const OpeningLineScreen({super.key, this.match, this.session});
 
   /// [session] — фразы, которые уже есть: из истории или первая, что написало сканирование анкеты.
   /// Без неё экран пишет первую фразу сам.
@@ -31,15 +31,12 @@ class OpeningLineScreen extends StatefulWidget {
 
   final OpeningLineSession? session;
 
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final OpeningLineViewModel? viewModel;
-
   @override
   State<OpeningLineScreen> createState() => _OpeningLineScreenState();
 }
 
 class _OpeningLineScreenState extends State<OpeningLineScreen> {
-  late final _viewModel = widget.viewModel ?? OpeningLineViewModel(match: widget.match, session: widget.session);
+  late final _viewModel = OpeningLineViewModel(match: widget.match, session: widget.session);
 
   late final StreamSubscription<OpeningLineAction> _actions;
 

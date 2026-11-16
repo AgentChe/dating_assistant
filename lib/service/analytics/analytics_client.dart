@@ -2,7 +2,7 @@ import 'package:amplitude_flutter/amplitude.dart';
 import 'package:amplitude_flutter/configuration.dart';
 import 'package:amplitude_flutter/events/base_event.dart';
 
-/// Куда уходят события: Amplitude на устройстве, фейк в тестах.
+/// Куда уходят события — Amplitude. Сервис знает только этот интерфейс, а не плагин.
 abstract interface class AnalyticsClient {
   void start(String apiKey);
 

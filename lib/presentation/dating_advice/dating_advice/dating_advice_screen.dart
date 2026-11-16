@@ -24,7 +24,7 @@ import 'package:flutter/services.dart';
 /// «Dating advice» (аналог DatingAdviceViewController): чат с коучем. Открывается поверх таб-бара —
 /// внизу у него поле ввода, а над ним быстрые ответы.
 class DatingAdviceScreen extends StatefulWidget {
-  const DatingAdviceScreen({super.key, this.breakdown, this.conversation, this.viewModel});
+  const DatingAdviceScreen({super.key, this.breakdown, this.conversation});
 
   /// [breakdown] — разбор, из которого открыли коуча («Get the next message»): переписка уже приложена.
   /// [conversation] — разговор из истории: продолжается с того же места.
@@ -36,16 +36,12 @@ class DatingAdviceScreen extends StatefulWidget {
 
   final CoachConversation? conversation;
 
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final DatingAdviceViewModel? viewModel;
-
   @override
   State<DatingAdviceScreen> createState() => _DatingAdviceScreenState();
 }
 
 class _DatingAdviceScreenState extends State<DatingAdviceScreen> {
-  late final _viewModel =
-      widget.viewModel ?? DatingAdviceViewModel(breakdown: widget.breakdown, conversation: widget.conversation);
+  late final _viewModel = DatingAdviceViewModel(breakdown: widget.breakdown, conversation: widget.conversation);
 
   late final StreamSubscription<DatingAdviceAction> _actions;
 

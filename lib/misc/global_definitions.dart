@@ -1,17 +1,7 @@
-import 'dart:io';
-
 /// Глобальные настройки приложения (аналог GlobalDefinitions из Swift-проектов).
 ///
-/// Значения можно переопределить при запуске:
-/// `flutter run --dart-define=USE_MOCKS=true` или `--dart-define=API_BASE_URL=http://localhost:8080`.
+/// Адрес сервера можно переопределить при запуске: `flutter run --dart-define=API_BASE_URL=http://localhost:8080`.
 abstract final class GlobalDefinitions {
-  /// Приложение ходит на наш сервер. Моки (transport/mock) — в тестах и по флагу USE_MOCKS=true:
-  /// тестам нельзя тратить генерации и зависеть от сети.
-  static bool get useMocks => const bool.fromEnvironment('USE_MOCKS') || _isTest;
-
-  /// flutter test запускает приложение с переменной окружения FLUTTER_TEST.
-  static final _isTest = Platform.environment.containsKey('FLUTTER_TEST');
-
   /// Адрес нашего API — сервер из server/ на машине команды. sslip.io — временный адрес, пока нет своего домена.
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',

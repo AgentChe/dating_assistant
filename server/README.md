@@ -79,12 +79,11 @@ curl -s localhost:8080/api/v1/analyses -d "{\"screenshot\": \"$(base64 -i testda
 go test ./...   # без модели: промпты собираются, ответы приводятся в порядок, коды ошибок верные
 ```
 
-С настоящей моделью — тест приложения: запросы собирают его классы, ответы читают его модели. Сервер должен
-быть запущен; тест тратит около семи генераций.
+С настоящей моделью — запросом на работающий сервер, например разбор скриншота из `testdata` (тратит одну
+генерацию):
 
 ```bash
-cd .. && flutter test test/server_contract_test.dart --dart-define=CUE_SERVER_URL=http://localhost:8080
-cd .. && flutter test test/server_contract_test.dart --dart-define=CUE_SERVER_URL=https://cue.192-81-217-92.sslip.io
+curl -s https://cue.192-81-217-92.sslip.io/api/v1/analyses -d "{\"screenshot\": \"$(base64 -i testdata/chat.jpg)\"}"
 ```
 
 ## Деплой

@@ -14,19 +14,16 @@ import 'package:flutter/material.dart';
 /// «Opening line» (аналог OpeningLineSourceViewController): из чего писать первую фразу.
 /// Открывается во вкладке Main, таб-бар остаётся.
 class OpeningLineSourceScreen extends StatefulWidget {
-  const OpeningLineSourceScreen({super.key, this.viewModel});
+  const OpeningLineSourceScreen({super.key});
 
   static Route<void> route() => MaterialPageRoute(builder: (_) => const OpeningLineSourceScreen());
-
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final OpeningLineSourceViewModel? viewModel;
 
   @override
   State<OpeningLineSourceScreen> createState() => _OpeningLineSourceScreenState();
 }
 
 class _OpeningLineSourceScreenState extends State<OpeningLineSourceScreen> {
-  late final _viewModel = widget.viewModel ?? OpeningLineSourceViewModel();
+  late final _viewModel = OpeningLineSourceViewModel();
 
   late final StreamSubscription<OpeningLineSourceAction> _actions;
 

@@ -18,19 +18,16 @@ import 'package:url_launcher/url_launcher.dart';
 /// «AI & privacy» (Figma 484:3499): переключатель согласия на ИИ, как это устроено, политика и удаление данных.
 /// Открывается из профиля, во вкладке.
 class AiPrivacyScreen extends StatefulWidget {
-  const AiPrivacyScreen({super.key, this.viewModel});
+  const AiPrivacyScreen({super.key});
 
   static Route<void> route() => MaterialPageRoute(builder: (_) => const AiPrivacyScreen());
-
-  /// Для тестов; в приложении экран создаёт ViewModel сам.
-  final AiPrivacyViewModel? viewModel;
 
   @override
   State<AiPrivacyScreen> createState() => _AiPrivacyScreenState();
 }
 
 class _AiPrivacyScreenState extends State<AiPrivacyScreen> {
-  late final _viewModel = widget.viewModel ?? AiPrivacyViewModel();
+  late final _viewModel = AiPrivacyViewModel();
 
   late final StreamSubscription<AiPrivacyAction> _actions;
 
