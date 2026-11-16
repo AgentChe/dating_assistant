@@ -85,5 +85,23 @@ cd .. && flutter test test/server_contract_test.dart --dart-define=CUE_SERVER_UR
 
 ## Деплой
 
-`Dockerfile` собирает образ: внутри один бинарник с промптами. Хостингу нужно передать `GEMINI_API_KEY` секретом
-и, если хочется, `GEMINI_MODEL`. Сервер останавливается по SIGTERM и даёт начатым генерациям договорить.
+Сервер работает на машине команды `dev@192.81.217.92` (Ubuntu, nginx, certbot) службой systemd `cue-server`:
+слушает только `127.0.0.1:8401`, снаружи до него доходят через nginx и HTTPS. Выкладка — одной командой из папки
+`server`:
+
+```bash
+./deploy/deploy.sh                          # собрать под Linux, выложить, перезапустить службу
+./deploy/deploy.sh --domain api.example.com # то же и сайт nginx с сертификатом Let's Encrypt для домена
+```
+
+Что делает скрипт:
+
+- собирает статический бинарник под linux/amd64 и кладёт его в `/opt/cue-server`;
+- ставит службу `deploy/cue-server.service`: пользователь `cue` без входа в систему, перезапуск при падении,
+  автозапуск после перезагрузки;
+- в первый раз берёт `GEMINI_API_KEY` из `server/.env` и кладёт в `/etc/cue-server.env` (права 640, root и группа
+  cue); ключ идёт по ssh через stdin и не попадает ни в аргументы команд, ни в логи;
+- с `--domain` — сайт nginx из `deploy/nginx-site.conf` (до 16 МБ на запрос, 75 с на ответ) и сертификат через
+  `certbot --nginx`. Домен должен уже указывать на 192.81.217.92 (A-запись).
+
+Логи службы: `sudo journalctl -u cue-server -f`. Другой вариант выкладки — `Dockerfile`: внутри тот же бинарник.

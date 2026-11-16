@@ -38,7 +38,8 @@ func main() {
 	service := flows.New(g, flows.GeminiModels(modelName))
 
 	server := &http.Server{
-		Addr:              ":" + envOr("PORT", "8080"),
+		// HOST=127.0.0.1 — только для nginx на той же машине: снаружи сервер доступен лишь через HTTPS.
+		Addr:              strings.TrimSpace(os.Getenv("HOST")) + ":" + envOr("PORT", "8080"),
 		Handler:           api.NewRouter(service, api.Options{}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       60 * time.Second,

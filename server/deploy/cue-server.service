@@ -1,0 +1,27 @@
+# Служба сервера Cue. Слушает только 127.0.0.1:8401 — снаружи до неё доходят через nginx и HTTPS.
+# Ставит и обновляет её deploy.sh.
+[Unit]
+Description=Cue server: Gemini proxy for the Cue app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cue
+Group=cue
+# GEMINI_API_KEY, HOST, PORT. Файл читают только root и группа cue.
+EnvironmentFile=/etc/cue-server.env
+ExecStart=/opt/cue-server/cue-server
+WorkingDirectory=/opt/cue-server
+Restart=always
+RestartSec=3
+# На остановке сервер ждёт начатые генерации до 60 секунд.
+TimeoutStopSec=70
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target
