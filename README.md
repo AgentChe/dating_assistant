@@ -52,6 +52,9 @@ lib/
 │       └── routes/                 обработчики эндпоинтов по доменам
 ├── service/                        бизнес-логика (≈ Service)
 │   ├── session/                    идентификаторы и подписка из OtterScale
+│   ├── analytics/                  события в Amplitude
+│   ├── consent/                    согласие на передачу данных ИИ
+│   ├── usage/                      бесплатные генерации: счётчик на устройстве
 │   ├── profile/                    ответы онбординга, хранятся на устройстве
 │   ├── history/                    история разборов, разговоров и фраз — только на устройстве (Hive)
 │   ├── connectivity/               есть ли сеть (≈ Reachability)
@@ -98,8 +101,9 @@ Rx не используем: `Future`, `Stream` и `ChangeNotifier` встро�
 - iOS — под `OtterScaleiOS` (`ios/Podfile`), мост `ios/Runner/OtterScaleBridge.swift`;
 - Android — `android/app/libs/otterscale.aar` (из car_connect) и `OtterScaleBridge.kt`.
 
-SDK запускает `SessionManager.start()` на сплэше. Ключ приложения — `GlobalDefinitions.otterScaleApiKey`:
-пока он пустой, SDK не запускается, а приложение работает без него.
+SDK запускает `SessionManager.start()` на сплэше. Ключ приложения — `GlobalDefinitions.otterScaleApiKey`;
+с пустым ключом SDK не запускается, а приложение работает без него. В виджет-тестах нативной части нет,
+и ответа канала тест не дождётся, поэтому тесты с `Injector` подменяют канал: `test/fakes/fake_otter_scale.dart`.
 
 Методы канала: `initialize`, `get_user_ids`, `has_active_subscription`, `get_subscriptions` (дата окончания,
 пробный период и автопродление — для карточки плана в профиле), на Android ещё `save_purchase`.
@@ -116,7 +120,7 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
   слушает его с запуска приложения.
 
 Пейгейт показывается после онбординга и на старте, если подписки нет. Id подписок, Terms и Privacy —
-в `GlobalDefinitions` (пока пустые, с TODO).
+в `GlobalDefinitions`; id подписок пока пустые, с TODO.
 
 ## Моки
 
@@ -145,6 +149,41 @@ SDK запускает `SessionManager.start()` на сплэше. Ключ пр
 и разбор, из которого открыли коуча (`breakdown`, тот же JSON, что прислал `POST /api/v1/analyses`). Первым
 фразам — уже предложенные фразы (`previous_lines`). Мок не учитывает тон и узнаёт тему по словам («ask them out»,
 «stopped replying»), а «Give me another option» и «Make it bolder» относит к теме последнего ответа из `messages`.
+
+## Аналитика
+
+Amplitude — как в Swift-приложениях (`AmplitudeManager`) и во Flutter-приложении car_play_sync:
+`service/analytics/AnalyticsManager` на плагине `amplitude_flutter`. Проект в Amplitude общий для приложений студии
+(ключ `GlobalDefinitions.amplitudeApiKey`), поэтому у каждого события есть свойство `app` — метка
+`GlobalDefinitions.applicationTag` (`DATING_ASSISTANT`) — и `anonymous_id` из OtterScale.
+
+| Событие | Когда |
+|---|---|
+| `First Launch` | первый запуск, один раз |
+| `Paygate Screen` | показался пейгейт — полноэкранный или шторка Plus |
+| `Home Screen` | показалась главная |
+| `UserIDSynced` | OtterScale узнал внутренний id пользователя (после проверки чека): он становится user id в Amplitude, событие — один раз на каждый новый id |
+
+Amplitude запускается со сплэша после OtterScale — событиям нужен `anonymous_id`. До запуска события никуда
+не уходят, поэтому экранам в тестах Amplitude не нужен; в тестах менеджера — `FakeAnalyticsClient`.
+
+## Согласие на ИИ
+
+Перед первым запросом к ИИ приложение спрашивает согласие на передачу переписок (правило App Review 5.1.2(i)),
+экран — Figma 480:3341. `service/consent/AiConsentManager` хранит ответ, а менеджеры разбора, коуча и фраз
+вызывают `ensureGranted()` перед каждым запросом: без согласия запрос не уходит. Спросить пользователя сервис
+сам не может, поэтому экран показывает `askUser` — его ставит `MainScreen`, под которым живут все функции с ИИ.
+
+- «Allow and continue» — согласие запоминается, запрос уходит; разбор спрашивает ещё до галереи.
+- «Not now» — ничего не отправлено, и это не ошибка: экран просто останавливается (`AiConsentDeclined`),
+  сообщение коуча возвращается в поле, экран первой фразы закрывается, а сверху плашка
+  «Nothing was sent. Allow AI when you're ready».
+- Профиль → «AI & privacy» (Figma 484:3499): согласие можно выключить — следующий запрос спросит снова;
+  «Delete my data» после вопроса стирает историю, ответы с онбординга и согласие и начинает с онбординга.
+  Подписка и счётчик бесплатных генераций остаются.
+
+Тексты «How it works» поправлены против макета: переписки разбирает Google Gemini, а не OpenAI, а импорта
+переписки файлом в приложении нет.
 
 ## Бесплатные генерации
 

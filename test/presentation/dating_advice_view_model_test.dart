@@ -304,6 +304,28 @@ void main() {
     expect(actions.whereType<ReplaceDraft>().map((action) => action.text), ['']);
   });
 
+  test('Not now on the AI consent sends nothing and puts the message back without Try again', () async {
+    mock.consentManager
+      ..isGranted = false
+      ..askUser = () async => false;
+    var errors = 0;
+    final viewModel = makeViewModel()
+      ..tryAgain = (_) async {
+        errors++;
+        return false;
+      };
+
+    viewModel.changeDraft('Should I ask them out?');
+    await viewModel.sendDraft();
+    await pumpEventQueue();
+
+    expect(mock.consentManager.asks, 1);
+    expect(errors, 0);
+    expect(userMessages(viewModel), isEmpty);
+    expect(actions.whereType<ReplaceDraft>().map((action) => action.text), ['', 'Should I ask them out?']);
+    expect((await mock.usageManager.obtainUsage()).used, 0);
+  });
+
   test('without free messages the limit block takes the composer’s place', () async {
     await useUpFreeMessages();
     final picker = FakeScreenshotPicker();

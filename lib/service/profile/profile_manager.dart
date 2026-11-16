@@ -27,4 +27,7 @@ class ProfileManager {
   }
 
   Future<void> save(Profile profile) => _preferences.setString(_profileKey, jsonEncode(profile.toJson()));
+
+  /// «Delete my data»: ответы с онбординга и голос стираются, и при следующем запуске будет онбординг.
+  Future<void> delete() => _preferences.remove(_profileKey);
 }

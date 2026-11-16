@@ -5,6 +5,7 @@ import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
 
+import 'fake_consent.dart';
 import 'fake_profile.dart';
 import 'fake_usage.dart';
 
@@ -14,15 +15,21 @@ typedef MockOpeningLines = ({
   ProfileManager profileManager,
   UsageManager usageManager,
   UsageMediator usageMediator,
+  FakeAiConsentManager consentManager,
 });
 
 Future<MockOpeningLines> mockOpeningLines() async {
   final profileManager = await fakeProfileManager();
   final usageMediator = UsageMediator();
   final usageManager = memoryUsageManager(usageMediator: usageMediator);
-  final transport = MockApiTransport(server: MockServer(generationTime: Duration.zero), latency: Duration.zero);
+  final consentManager = FakeAiConsentManager();
+  final transport = MockApiTransport(
+    server: MockServer(generationTime: Duration.zero),
+    latency: Duration.zero,
+  );
   return (
-    manager: OpeningLineManager(transport, profileManager, usageManager),
+    manager: OpeningLineManager(transport, profileManager, usageManager, consentManager),
+    consentManager: consentManager,
     profileManager: profileManager,
     usageManager: usageManager,
     usageMediator: usageMediator,

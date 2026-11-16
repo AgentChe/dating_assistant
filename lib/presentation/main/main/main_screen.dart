@@ -2,6 +2,9 @@ import 'dart:math' as math;
 
 import 'package:dating_assistant/misc/appearance.dart';
 import 'package:dating_assistant/misc/components/fade_page_route.dart';
+import 'package:dating_assistant/misc/custom_views/top_toast.dart';
+import 'package:dating_assistant/misc/injector.dart';
+import 'package:dating_assistant/presentation/consent/ai_consent_screen.dart';
 import 'package:dating_assistant/presentation/main/history/history_screen.dart';
 import 'package:dating_assistant/presentation/main/home/home_screen.dart';
 import 'package:dating_assistant/presentation/main/main/main_view_model.dart';
@@ -33,10 +36,27 @@ class _MainScreenState extends State<MainScreen> {
 
   final _navigatorKeys = {for (final tab in MainTab.values) tab: GlobalKey<NavigatorState>()};
 
+  final _consentManager = Injector.shared.aiConsentManager;
+
+  @override
+  void initState() {
+    super.initState();
+    // Все функции с ИИ живут под главным экраном: отсюда и спрашиваем согласие, когда оно понадобилось.
+    _consentManager.askUser = _askAiConsent;
+  }
+
   @override
   void dispose() {
+    if (_consentManager.askUser == _askAiConsent) _consentManager.askUser = null;
     _viewModel.dispose();
     super.dispose();
+  }
+
+  /// Экран согласия поверх всего; после «Not now» — плашка, что ничего не ушло.
+  Future<bool> _askAiConsent() async {
+    final isAllowed = await AiConsentScreen.present(context);
+    if (!isAllowed && mounted) TopToast.show(context, 'Nothing was sent. Allow AI when you’re ready');
+    return isAllowed;
   }
 
   @override

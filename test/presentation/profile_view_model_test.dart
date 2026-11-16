@@ -12,6 +12,7 @@ import 'package:dating_assistant/service/usage/model/usage.dart';
 import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fakes/fake_consent.dart';
 import '../fakes/fake_managers.dart';
 import '../fakes/fake_profile.dart';
 
@@ -28,6 +29,7 @@ void main() {
     purchaseManager: purchaseManager,
     usageManager: usageManager,
     usageMediator: usageMediator,
+    consentManager: FakeAiConsentManager(),
     yearlyId: 'yearly',
     weeklyId: 'weekly',
   );

@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _actions = _viewModel.actions.listen(_handle);
     _lifecycle = AppLifecycleListener(onResume: _viewModel.refresh);
-    _viewModel.loadUsage();
+    _viewModel.start();
   }
 
   @override

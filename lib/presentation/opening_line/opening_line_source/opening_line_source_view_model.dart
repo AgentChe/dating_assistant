@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
@@ -71,8 +72,11 @@ class OpeningLineSourceViewModel extends ViewModel<OpeningLineSourceAction> {
 
     _isPicking = true;
     try {
+      await _openingLineManager.ensureConsent();
       final screenshot = await _picker.pick();
       if (screenshot != null) emit(ScanBio(screenshot));
+    } on AiConsentDeclined {
+      // «Not now»: ничего не отправлено, галерея не открывается.
     } catch (error) {
       debugPrint('OpeningLineSourceViewModel: cannot pick the screenshot: $error');
     } finally {

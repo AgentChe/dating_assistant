@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:dating_assistant/misc/custom_views/failure_toast.dart';
 import 'package:dating_assistant/misc/fonts.dart';
 import 'package:dating_assistant/misc/global_definitions.dart';
+import 'package:dating_assistant/presentation/main/profile/ai_privacy/ai_privacy_screen.dart';
 import 'package:dating_assistant/presentation/main/profile/profile_view_model.dart';
 import 'package:dating_assistant/presentation/main/profile/views/about_you_card.dart';
 import 'package:dating_assistant/presentation/main/profile/views/about_you_sheet.dart';
 import 'package:dating_assistant/presentation/main/profile/views/plan_section.dart';
+import 'package:dating_assistant/presentation/main/profile/views/profile_row.dart';
 import 'package:dating_assistant/presentation/main/profile/views/profile_section.dart';
 import 'package:dating_assistant/misc/custom_views/spice_card.dart';
 import 'package:dating_assistant/presentation/splash/paygate/views/paygate_copy.dart';
@@ -93,11 +95,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onRestore: _viewModel.restore,
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      '🔒 Screenshots are deleted right after the breakdown. '
-                      'Only the text you generated stays in your history.',
-                      textAlign: TextAlign.center,
-                      style: Fonts.eyebrow.copyWith(fontWeight: FontWeight.w400, height: 16 / 12),
+                    // Вместо прежней подписи про скриншоты — вход в «AI & privacy» (Figma 484:3403).
+                    ProfileCard(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: ProfileRow(
+                          emoji: '🔒',
+                          title: 'AI & privacy',
+                          value: _viewModel.isAiSharingAllowed ? 'On' : 'Off',
+                          hasDivider: false,
+                          onTap: _viewModel.openAiPrivacy,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -136,6 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (aboutYou != null) await _viewModel.updateAboutYou(aboutYou);
       case ProfileAction.openPlus:
         if (await PlusSheet.present(context)) await _viewModel.loadPlan();
+      case ProfileAction.openAiPrivacy:
+        await Navigator.of(context).push(AiPrivacyScreen.route());
       case ProfileAction.openSubscriptions:
         final url = defaultTargetPlatform == TargetPlatform.iOS
             ? GlobalDefinitions.appStoreSubscriptionsUrl

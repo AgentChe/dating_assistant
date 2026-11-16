@@ -22,6 +22,9 @@ abstract final class Appearance {
 
   static const accent = Color(0xFFFF7D56);
 
+  /// Опасные действия и ошибки: «Delete my data», Spicy.
+  static const red = Color(0xFFFF5757);
+
   static const accentLight = Color(0xFFFF9B83);
 
   /// Пастельная заливка карточек: свайп-карточки, голос, план.

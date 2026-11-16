@@ -12,6 +12,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import 'fakes/fake_analysis.dart';
+import 'fakes/fake_otter_scale.dart';
 import 'fakes/fake_store.dart';
 import 'fakes/fake_connectivity.dart';
 import 'fakes/fake_history.dart';
@@ -40,7 +41,10 @@ void main() {
     ImagePickerPlatform.instance = picker;
     // Сеть «есть», а история — в ящике Hive в памяти.
     ConnectivityPlatform.instance = FakeConnectivity();
+    mockOtterScaleChannel();
     await Injector.configure(historyBox: await memoryHistoryBox());
+    // Согласие на ИИ уже дано: сам экран согласия проверяет ai_consent_flow_test.
+    await Injector.shared.aiConsentManager.setGranted(true);
   });
 
   /// Ждём моки: задержку сети и «нейросеть», потом анимации. Первый кадр строит экран,

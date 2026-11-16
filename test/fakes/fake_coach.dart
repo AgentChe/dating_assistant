@@ -13,6 +13,7 @@ import 'package:dating_assistant/transport/api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_api_transport.dart';
 import 'package:dating_assistant/transport/mock/mock_server.dart';
 
+import 'fake_consent.dart';
 import 'fake_profile.dart';
 import 'fake_usage.dart';
 
@@ -25,16 +26,22 @@ typedef MockCoach = ({
   ApiTransport transport,
   UsageManager usageManager,
   UsageMediator usageMediator,
+  FakeAiConsentManager consentManager,
 });
 
 Future<MockCoach> mockCoach() async {
   final profileManager = await fakeProfileManager();
   final usageMediator = UsageMediator();
   final usageManager = memoryUsageManager(usageMediator: usageMediator);
-  final transport = MockApiTransport(server: MockServer(generationTime: Duration.zero), latency: Duration.zero);
+  final consentManager = FakeAiConsentManager();
+  final transport = MockApiTransport(
+    server: MockServer(generationTime: Duration.zero),
+    latency: Duration.zero,
+  );
   return (
-    manager: CoachManager(transport, profileManager, usageManager),
-    analysisManager: AnalysisManager(transport, usageManager),
+    manager: CoachManager(transport, profileManager, usageManager, consentManager),
+    analysisManager: AnalysisManager(transport, usageManager, consentManager),
+    consentManager: consentManager,
     profileManager: profileManager,
     transport: transport,
     usageManager: usageManager,

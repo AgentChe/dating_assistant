@@ -52,11 +52,18 @@ class SessionManager {
     if (!isEnabled) return;
 
     try {
+      final internalId = _userIds?.internalId;
       _userIds = await _otterScale.userIds();
+      if (_userIds?.internalId != internalId) _userIdChanges.add(null);
     } catch (error) {
       debugPrint('SessionManager: cannot read the user ids: $error');
     }
   }
+
+  final _userIdChanges = StreamController<void>.broadcast();
+
+  /// Появился или сменился внутренний идентификатор — после покупки или восстановления.
+  Stream<void> get userIdChanges => _userIdChanges.stream;
 
   Future<bool> hasActiveSubscriptions() async {
     if (!isEnabled) return false;

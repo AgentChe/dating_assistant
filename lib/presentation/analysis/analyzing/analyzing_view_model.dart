@@ -1,4 +1,5 @@
 import 'package:dating_assistant/misc/components/view_model.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:flutter/foundation.dart';
 
@@ -46,6 +47,11 @@ class AnalyzingViewModel<T> extends ViewModel<AnalyzingAction<T>> {
       } catch (error) {
         if (UsageManager.isGenerationLimit(error)) {
           emit(const AnalysisLimitReached());
+          return;
+        }
+        // Согласие на ИИ отозвали, пока выбирали скриншот, и снова не дали: ничего не ушло.
+        if (AiConsentManager.isDeclined(error)) {
+          emit(const AnalysisCancelled());
           return;
         }
         debugPrint('AnalyzingViewModel: $error');

@@ -1,4 +1,13 @@
 PODS:
+  - amplitude_flutter (4.4.0):
+    - AmplitudeSwift (~> 1.17.5)
+    - Flutter
+    - FlutterMacOS
+  - AmplitudeCore (1.6.1)
+  - AmplitudeSwift (1.17.5):
+    - AmplitudeCore (< 2.0.0, >= 1.4.1)
+    - AnalyticsConnector (~> 1.3.0)
+  - AnalyticsConnector (1.3.3)
   - connectivity_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -18,6 +27,7 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - amplitude_flutter (from `.symlinks/plugins/amplitude_flutter/darwin`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
@@ -27,7 +37,15 @@ DEPENDENCIES:
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
+SPEC REPOS:
+  trunk:
+    - AmplitudeCore
+    - AmplitudeSwift
+    - AnalyticsConnector
+
 EXTERNAL SOURCES:
+  amplitude_flutter:
+    :path: ".symlinks/plugins/amplitude_flutter/darwin"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
   Flutter:
@@ -51,6 +69,10 @@ CHECKOUT OPTIONS:
     :git: https://github.com/AgentChe/OtterScaleiOS.git
 
 SPEC CHECKSUMS:
+  amplitude_flutter: a430a891abbd9e486f53d2ab499af9ead0bb8047
+  AmplitudeCore: 170ed4754a8e335e67b3b9d2499e657cdc10a419
+  AmplitudeSwift: 89f675b8b81a2710ef244324d2083641ffb702b6
+  AnalyticsConnector: bd6d6e6fa30f07f027e2d1fa810ecab096e52b64
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_secure_storage_darwin: 46e401699982ee74142909676535e0f6a7321e58

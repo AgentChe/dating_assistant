@@ -186,6 +186,8 @@ class _OpeningLineScreenState extends State<OpeningLineScreen> {
     switch (action) {
       case OpeningLineAction.openPlus:
         if (await PlusSheet.present(context)) _viewModel.didSubscribe();
+      case OpeningLineAction.close:
+        Navigator.of(context).pop();
     }
   }
 }

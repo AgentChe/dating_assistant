@@ -68,6 +68,12 @@ class HistoryManager {
     _mediator.notifyChanged();
   }
 
+  /// «Delete my data»: вся история, без возврата.
+  Future<void> deleteAll() async {
+    await _box.clear();
+    _mediator.notifyChanged();
+  }
+
   static const _analysis = 'analysis';
 
   static const _conversation = 'coach_conversation';

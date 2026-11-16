@@ -7,6 +7,7 @@ environment:
   sdk: ^3.11.5
 
 dependencies:
+  amplitude_flutter: ^4.8.2
   animations: ^2.2.0
   connectivity_plus: ^7.3.2
   dio: ^5.11.1
@@ -38,6 +39,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - assets/images/consent/
     - assets/images/home/
     - assets/images/icons_3d/
     - assets/images/onboarding/

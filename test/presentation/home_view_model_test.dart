@@ -6,6 +6,7 @@ import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_analysis.dart';
+import '../fakes/fake_analytics.dart';
 import '../fakes/fake_history.dart';
 import '../fakes/fake_managers.dart';
 
@@ -15,6 +16,7 @@ void main() {
   late FakeUsageManager usageManager;
   late UsageMediator usageMediator;
   late HistoryManager historyManager;
+  late FakeAnalyticsManager analytics;
   late List<HomeAction> actions;
 
   HomeViewModel makeViewModel({DateTime Function()? now}) {
@@ -26,6 +28,7 @@ void main() {
       sessionManager: sessionManager,
       usageManager: usageManager,
       usageMediator: usageMediator,
+      analyticsManager: analytics,
     );
     viewModel.actions.listen(actions.add);
     return viewModel;
@@ -43,7 +46,14 @@ void main() {
     sessionManager = FakeSessionManager(isPlus: false);
     usageManager = FakeUsageManager(usage: const Usage(used: 1, limit: 3));
     usageMediator = UsageMediator();
+    analytics = FakeAnalyticsManager();
     actions = [];
+  });
+
+  test('the home screen reports itself to Amplitude', () async {
+    await makeViewModel().start();
+
+    expect(analytics.events, ['Home Screen']);
   });
 
   test('greets by the time of day', () {

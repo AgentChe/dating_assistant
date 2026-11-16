@@ -3,6 +3,8 @@ import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/analytics/analytics_manager.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/session/session_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
@@ -45,10 +47,12 @@ class HomeViewModel extends ViewModel<HomeAction> {
     SessionManager? sessionManager,
     UsageManager? usageManager,
     UsageMediator? usageMediator,
+    AnalyticsManager? analyticsManager,
   }) : _now = now ?? DateTime.now,
        _picker = picker ?? ScreenshotPicker(),
        _analysisManager = analysisManager ?? Injector.shared.analysisManager,
        _historyManager = historyManager ?? Injector.shared.historyManager,
+       _analyticsManager = analyticsManager ?? Injector.shared.analyticsManager,
        _limit = GenerationLimit(
          sessionManager: sessionManager,
          usageManager: usageManager,
@@ -63,6 +67,8 @@ class HomeViewModel extends ViewModel<HomeAction> {
 
   final HistoryManager _historyManager;
 
+  final AnalyticsManager _analyticsManager;
+
   final GenerationLimit _limit;
 
   var _isPicking = false;
@@ -73,6 +79,12 @@ class HomeViewModel extends ViewModel<HomeAction> {
     >= 12 && < 18 => 'Good afternoon',
     _ => 'Good evening',
   };
+
+  /// Главная показалась: событие для Amplitude и счётчик бесплатных генераций.
+  Future<void> start() {
+    _analyticsManager.logEvent(AnalyticsEvents.homeScreen);
+    return loadUsage();
+  }
 
   /// Узнаём заранее, остались ли бесплатные генерации: проверка по нажатию задержала бы галерею.
   Future<void> loadUsage() => _limit.load();
@@ -92,8 +104,11 @@ class HomeViewModel extends ViewModel<HomeAction> {
 
     _isPicking = true;
     try {
+      await _analysisManager.ensureConsent();
       final screenshot = await _picker.pick();
       if (screenshot != null) emit(AnalyzeScreenshot(screenshot));
+    } on AiConsentDeclined {
+      // «Not now»: ничего не отправлено, галерея не открывается.
     } catch (error) {
       debugPrint('HomeViewModel: cannot pick the screenshot: $error');
     } finally {

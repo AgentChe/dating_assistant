@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dating_assistant/service/purchase/model/purchase_result.dart';
 import 'package:dating_assistant/service/purchase/model/store_product.dart';
 import 'package:dating_assistant/service/purchase/purchase_manager.dart';
@@ -63,8 +65,19 @@ class FakeSessionManager implements SessionManager {
   @override
   String? get anonymousId => 'anonymous-1';
 
+  /// Внутренний id OtterScale — появляется после проверки чека.
+  String? internalUserId;
+
+  final _userIdChanges = StreamController<void>.broadcast();
+
+  /// OtterScale узнал внутренний id — как после покупки.
+  void changeInternalId(String id) {
+    internalUserId = id;
+    _userIdChanges.add(null);
+  }
+
   @override
-  String? get internalId => null;
+  String? get internalId => internalUserId;
 
   @override
   Future<void> start({Duration timeout = const Duration(seconds: 5)}) async {}
@@ -77,6 +90,9 @@ class FakeSessionManager implements SessionManager {
 
   @override
   Future<Subscription?> activeSubscription() async => isPlus ? subscription : null;
+
+  @override
+  Stream<void> get userIdChanges => _userIdChanges.stream;
 }
 
 /// Счётчик генераций, заданный в тесте.

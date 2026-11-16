@@ -3,22 +3,35 @@ import 'package:dating_assistant/service/purchase/model/purchase_error.dart';
 import 'package:dating_assistant/service/purchase/model/purchase_result.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fakes/fake_analytics.dart';
 import '../fakes/fake_managers.dart';
 
 void main() {
   late FakePurchaseManager purchaseManager;
+  late FakeAnalyticsManager analytics;
   late PaygateViewModel viewModel;
   late List<PaygateAction> actions;
 
   setUp(() async {
     purchaseManager = FakePurchaseManager();
-    viewModel = PaygateViewModel(purchaseManager: purchaseManager, yearlyId: 'yearly', weeklyId: 'weekly');
+    analytics = FakeAnalyticsManager();
+    viewModel = PaygateViewModel(
+      purchaseManager: purchaseManager,
+      analyticsManager: analytics,
+      yearlyId: 'yearly',
+      weeklyId: 'weekly',
+    );
     actions = [];
     viewModel.actions.listen(actions.add);
-    await viewModel.loadProducts();
+    await viewModel.start();
   });
 
-  test('loads both plans and the yearly saving', () {
+  test('loads both plans and the yearly saving, and reports the paygate to Amplitude once', () async {
+    expect(analytics.events, ['Paygate Screen']);
+    // «Try again» после ошибки перезагружает тарифы, но экран заново не показывался.
+    await viewModel.loadProducts();
+    expect(analytics.events, ['Paygate Screen']);
+
     expect(viewModel.hasProductsError, isFalse);
     expect(viewModel.selectedProduct?.id, 'yearly');
     expect(viewModel.yearlySavingPercent, 85);
@@ -26,7 +39,12 @@ void main() {
   });
 
   test('without product ids the plans fail to load', () async {
-    final viewModel = PaygateViewModel(purchaseManager: purchaseManager, yearlyId: '', weeklyId: '');
+    final viewModel = PaygateViewModel(
+      purchaseManager: purchaseManager,
+      analyticsManager: analytics,
+      yearlyId: '',
+      weeklyId: '',
+    );
 
     await viewModel.loadProducts();
 

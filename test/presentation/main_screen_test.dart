@@ -13,6 +13,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 import '../fakes/fake_connectivity.dart';
 import '../fakes/fake_history.dart';
+import '../fakes/fake_otter_scale.dart';
 
 void main() {
   // Вкладка Profile берёт менеджеры из Injector.
@@ -20,7 +21,10 @@ void main() {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
     // Сеть «есть», а история — в ящике Hive в памяти.
     ConnectivityPlatform.instance = FakeConnectivity();
+    mockOtterScaleChannel();
     await Injector.configure(historyBox: await memoryHistoryBox());
+    // Согласие на ИИ уже дано: сам экран согласия проверяет ai_consent_flow_test.
+    await Injector.shared.aiConsentManager.setGranted(true);
   });
 
   Future<void> openMainScreen(WidgetTester tester) async {

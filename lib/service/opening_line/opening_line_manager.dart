@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:dating_assistant/service/opening_line/request/generate_opening_line_request.dart';
 import 'package:dating_assistant/service/profile/model/spice_level.dart';
@@ -9,7 +10,7 @@ import 'package:dating_assistant/transport/api_transport.dart';
 
 /// Первые фразы для мэтча (аналог XxxManager из Swift-проектов). Пишет их нейросеть на нашем сервере.
 class OpeningLineManager {
-  OpeningLineManager(this._transport, this._profileManager, this._usageManager);
+  OpeningLineManager(this._transport, this._profileManager, this._usageManager, this._consentManager);
 
   final ApiTransport _transport;
 
@@ -17,7 +18,13 @@ class OpeningLineManager {
 
   final UsageManager _usageManager;
 
-  /// Бросает NetworkError; кончились бесплатные генерации — GenerationLimitReached, до запроса к серверу.
+  final AiConsentManager _consentManager;
+
+  /// Согласие на ИИ — до галереи: скриншот анкеты сразу уходит на сервер. Отказ — AiConsentDeclined.
+  Future<void> ensureConsent() => _consentManager.ensureGranted();
+
+  /// Бросает NetworkError; кончились бесплатные генерации — GenerationLimitReached, без согласия на ИИ —
+  /// AiConsentDeclined; оба — до запроса к серверу.
   Future<OpeningLine> generate({
     required SpiceLevel spice,
     MatchDetails? match,
@@ -25,6 +32,7 @@ class OpeningLineManager {
     List<String> previousLines = const [],
   }) async {
     await _usageManager.checkLimit();
+    await _consentManager.ensureGranted();
     final json = await _transport.callServerApi(
       GenerateOpeningLineRequest(
         spice: spice,

@@ -11,6 +11,7 @@ import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_inte
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
+import 'fakes/fake_otter_scale.dart';
 import 'fakes/fake_store.dart';
 import 'fakes/fake_connectivity.dart';
 import 'fakes/fake_history.dart';
@@ -26,7 +27,10 @@ void main() {
     InAppPurchasePlatform.instance = FakeStore(isStoreAvailable: false);
     // Сеть «есть», а история — в ящике Hive в памяти.
     ConnectivityPlatform.instance = FakeConnectivity();
+    mockOtterScaleChannel();
     await Injector.configure(historyBox: await memoryHistoryBox());
+    // Согласие на ИИ уже дано: сам экран согласия проверяет ai_consent_flow_test.
+    await Injector.shared.aiConsentManager.setGranted(true);
 
     Future<void> tap(String text) async {
       await tester.tap(find.text(text).last);

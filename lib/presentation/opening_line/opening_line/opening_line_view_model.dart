@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/injector.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/opening_line/model/opening_line.dart';
 import 'package:dating_assistant/service/opening_line/opening_line_manager.dart';
@@ -11,7 +12,7 @@ import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
 import 'package:flutter/foundation.dart';
 
-enum OpeningLineAction { openPlus }
+enum OpeningLineAction { openPlus, close }
 
 /// Первая фраза для мэтча: острота и «Another one». Фразы для одного мэтча — сессия: она живёт в истории
 /// на устройстве, а уже предложенные фразы уходят на сервер, чтобы он не повторялся.
@@ -112,6 +113,9 @@ class OpeningLineViewModel extends ViewModel<OpeningLineAction> {
     } catch (error) {
       if (UsageManager.isGenerationLimit(error)) {
         _limit.didReachLimit();
+      } else if (AiConsentManager.isDeclined(error)) {
+        // «Not now»: фраза не написана. Первой фразы нет — показывать нечего, экран закрывается.
+        if (_line == null) emit(OpeningLineAction.close);
       } else {
         debugPrint('OpeningLineViewModel: $error');
         _hasFailed = true;

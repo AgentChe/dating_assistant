@@ -12,8 +12,15 @@ abstract final class GlobalDefinitions {
   /// OtterScale — аналитика и подписки, как в Swift-приложениях.
   static const otterScaleHost = 'https://api.korrekted.com';
 
-  /// Ключ приложения в OtterScale. Пока он пустой, SDK не запускается.
-  static const otterScaleApiKey = '';
+  /// Ключ приложения в OtterScale. Пустой — SDK не запускается.
+  static const otterScaleApiKey = 'ghHHSVnIdVYu1er4';
+
+  /// Amplitude — общий проект для приложений студии, как в Swift-приложениях: ключ один,
+  /// а приложение различает свойство `app` у каждого события.
+  static const amplitudeApiKey = '0d810afcbd45c0b58a5ed6cd272acfa';
+
+  /// Метка приложения в Amplitude (как DOG_TRAINING, WALL_PILATES в Swift-приложениях).
+  static const applicationTag = 'DATING_ASSISTANT';
 
   /// Годовая подписка Cue Plus — одинаковый id в App Store и Google Play.
   // TODO: вписать id годовой подписки, когда создадим продукт в App Store.
@@ -23,11 +30,9 @@ abstract final class GlobalDefinitions {
   // TODO: вписать id недельной подписки, когда создадим продукт в App Store.
   static const paygateWeeklyId = '';
 
-  // TODO: вписать ссылку на условия использования.
-  static const termsOfServiceUrl = '';
+  static const termsOfServiceUrl = 'https://appdilla.com/terms';
 
-  // TODO: вписать ссылку на политику конфиденциальности.
-  static const privacyPolicyUrl = '';
+  static const privacyPolicyUrl = 'https://appdilla.com/policy';
 
   /// Управление подписками в App Store — кнопка «Manage subscription» в профиле.
   static const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';

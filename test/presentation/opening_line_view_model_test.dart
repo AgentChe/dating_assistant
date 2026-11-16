@@ -22,6 +22,9 @@ class _FakeOpeningLineManager implements OpeningLineManager {
   final previousLines = <List<String>>[];
 
   @override
+  Future<void> ensureConsent() async {}
+
+  @override
   Future<OpeningLine> generate({
     required SpiceLevel spice,
     MatchDetails? match,
@@ -80,6 +83,21 @@ void main() {
     expect(viewModel.caption, '2 of 3 free generations left');
     final saved = historyManager.obtainHistory().single;
     expect((saved.kind, saved.preview), (HistoryKind.openingLine, viewModel.line?.text));
+  });
+
+  test('Not now on the AI consent before the first line closes the screen: there is nothing to show', () async {
+    mock.consentManager
+      ..isGranted = false
+      ..askUser = () async => false;
+    final viewModel = makeViewModel();
+
+    await viewModel.start();
+    await pumpEventQueue();
+
+    expect(actions, [OpeningLineAction.close]);
+    expect(viewModel.line, isNull);
+    expect(viewModel.hasFailed, isFalse);
+    expect(historyManager.obtainHistory(), isEmpty);
   });
 
   test('a line from the bio scan is shown as is, and the next one uses what the server read', () async {

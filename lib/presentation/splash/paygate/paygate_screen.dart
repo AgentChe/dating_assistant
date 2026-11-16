@@ -44,7 +44,7 @@ class _PaygateScreenState extends State<PaygateScreen> {
     super.initState();
     _actions = _viewModel.actions.listen(_handle);
     _scrollController.addListener(_onScroll);
-    _viewModel.loadProducts();
+    _viewModel.start();
   }
 
   @override

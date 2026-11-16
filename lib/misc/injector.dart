@@ -1,6 +1,8 @@
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
+import 'package:dating_assistant/service/analytics/analytics_manager.dart';
 import 'package:dating_assistant/service/coach/coach_manager.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/connectivity/connectivity_manager.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/history/history_mediator.dart';
@@ -56,6 +58,8 @@ final class Injector {
 
   late final profileManager = ProfileManager(_preferences);
 
+  late final analyticsManager = AnalyticsManager(sessionManager: sessionManager, preferences: _preferences);
+
   late final purchaseManager = PurchaseManager(sessionManager: sessionManager);
 
   late final usageManager = UsageManager(DeviceUsageStorage(_preferences), sessionManager, usageMediator);
@@ -68,11 +72,14 @@ final class Injector {
 
   late final connectivityManager = ConnectivityManager();
 
-  late final analysisManager = AnalysisManager(transport, usageManager);
+  /// Согласие на передачу данных ИИ: без него менеджеры генераций ничего не отправляют.
+  late final aiConsentManager = AiConsentManager(_preferences);
 
-  late final openingLineManager = OpeningLineManager(transport, profileManager, usageManager);
+  late final analysisManager = AnalysisManager(transport, usageManager, aiConsentManager);
 
-  late final coachManager = CoachManager(transport, profileManager, usageManager);
+  late final openingLineManager = OpeningLineManager(transport, profileManager, usageManager, aiConsentManager);
+
+  late final coachManager = CoachManager(transport, profileManager, usageManager, aiConsentManager);
 
   /// Транспорт к нашему серверу: моки или настоящий API.
   late final ApiTransport transport = GlobalDefinitions.useMocks

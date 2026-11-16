@@ -39,6 +39,24 @@ abstract final class AppImages {
   static const analyzeProfileCard = 'assets/images/home/analyze_profile_card.png';
 
   static const analyzeChatCard = 'assets/images/home/analyze_chat_card.png';
+
+  /// Согласие на ИИ: пузырь чата со звёздочкой над заголовком, кадр 396×168.
+  static const consentHero = 'assets/images/consent/hero.png';
+
+  /// Тот же пузырь в кадре 40×40 — у переключателя в «AI & privacy».
+  static const chatAi3d = 'assets/images/consent/chat_ai.png';
+
+  /// «How it works»: что уходит, кто разбирает, что удаляется.
+  static const consentShared3d = 'assets/images/consent/shared.png';
+
+  static const consentProvider3d = 'assets/images/consent/ai_provider.png';
+
+  static const consentDeleted3d = 'assets/images/consent/deleted.png';
+
+  /// «Your data»: Privacy Policy и Delete my data, кадр 32×32.
+  static const policy3d = 'assets/images/consent/policy.png';
+
+  static const deleteData3d = 'assets/images/consent/delete_data.png';
 }
 
 /// Векторные иконки из assets/icons (SVG из Figma).

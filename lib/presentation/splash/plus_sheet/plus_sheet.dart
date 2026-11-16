@@ -55,7 +55,7 @@ class _PlusSheetState extends State<PlusSheet> {
   void initState() {
     super.initState();
     _actions = _viewModel.actions.listen(_handle);
-    _viewModel.loadProducts();
+    _viewModel.start();
   }
 
   @override

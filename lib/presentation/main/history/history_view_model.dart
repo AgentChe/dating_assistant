@@ -6,6 +6,7 @@ import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/misc/media/screenshot_picker.dart';
 import 'package:dating_assistant/service/analysis/analysis_manager.dart';
 import 'package:dating_assistant/service/analysis/model/chat_breakdown.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/history/history_mediator.dart';
@@ -208,8 +209,11 @@ class HistoryViewModel extends ViewModel<HistoryAction> {
 
     _isPicking = true;
     try {
+      await _analysisManager.ensureConsent();
       final screenshot = await _picker.pick();
       if (screenshot != null) emit(AnalyzeScreenshot(screenshot));
+    } on AiConsentDeclined {
+      // «Not now»: ничего не отправлено, галерея не открывается.
     } catch (error) {
       debugPrint('HistoryViewModel: cannot pick the screenshot: $error');
     } finally {

@@ -1,6 +1,7 @@
 import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/misc/injector.dart';
+import 'package:dating_assistant/service/analytics/analytics_manager.dart';
 import 'package:dating_assistant/service/purchase/model/purchase_result.dart';
 import 'package:dating_assistant/service/purchase/model/store_product.dart';
 import 'package:dating_assistant/service/purchase/purchase_manager.dart';
@@ -17,9 +18,11 @@ enum PaygateAction { close, subscribed, openTerms, openPrivacy }
 class PaygateViewModel extends ViewModel<PaygateAction> {
   PaygateViewModel({
     PurchaseManager? purchaseManager,
+    AnalyticsManager? analyticsManager,
     this.yearlyId = GlobalDefinitions.paygateYearlyId,
     this.weeklyId = GlobalDefinitions.paygateWeeklyId,
-  }) : _purchaseManager = purchaseManager ?? Injector.shared.purchaseManager;
+  }) : _purchaseManager = purchaseManager ?? Injector.shared.purchaseManager,
+       _analyticsManager = analyticsManager ?? Injector.shared.analyticsManager;
 
   /// Недель в году — для цены годовой подписки в пересчёте на неделю.
   static const _weeksInYear = 52;
@@ -29,6 +32,8 @@ class PaygateViewModel extends ViewModel<PaygateAction> {
   final String weeklyId;
 
   final PurchaseManager _purchaseManager;
+
+  final AnalyticsManager _analyticsManager;
 
   StoreProduct? _yearly;
 
@@ -81,6 +86,12 @@ class PaygateViewModel extends ViewModel<PaygateAction> {
 
   /// «$1.15» — годовая подписка в пересчёте на неделю.
   String? get yearlyPricePerWeek => _yearly?.priceDividedBy(_weeksInYear);
+
+  /// Пейгейт показался — полноэкранный или шторка Plus: событие для Amplitude и тарифы из магазина.
+  Future<void> start() {
+    _analyticsManager.logEvent(AnalyticsEvents.paygateScreen);
+    return loadProducts();
+  }
 
   Future<void> loadProducts() async {
     _isLoadingProducts = true;

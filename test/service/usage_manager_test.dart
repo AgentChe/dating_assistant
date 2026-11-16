@@ -115,7 +115,9 @@ void main() {
 
   test('on iOS the counter lives in the Keychain, on Android in the preferences', () async {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
-    final preferences = await SharedPreferencesWithCache.create(cacheOptions: const SharedPreferencesWithCacheOptions());
+    final preferences = await SharedPreferencesWithCache.create(
+      cacheOptions: const SharedPreferencesWithCacheOptions(),
+    );
     final keychain = _FakeKeychain();
     final device = DeviceUsageStorage(preferences, keychain: keychain);
     addTearDown(() => debugDefaultTargetPlatformOverride = null);

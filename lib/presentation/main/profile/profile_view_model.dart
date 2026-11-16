@@ -4,6 +4,7 @@ import 'package:dating_assistant/misc/components/view_model.dart';
 import 'package:dating_assistant/misc/global_definitions.dart';
 import 'package:dating_assistant/misc/injector.dart';
 import 'package:dating_assistant/presentation/splash/paygate/paygate_view_model.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/profile/model/age_range.dart';
 import 'package:dating_assistant/service/profile/model/dating_goal.dart';
 import 'package:dating_assistant/service/profile/model/gender.dart';
@@ -44,7 +45,7 @@ final class PlusPlan extends ProfilePlan {
   final String? price;
 }
 
-enum ProfileAction { openAboutYou, openPlus, openSubscriptions }
+enum ProfileAction { openAboutYou, openPlus, openSubscriptions, openAiPrivacy }
 
 /// Профиль: ответы с онбординга, острота по умолчанию и план (аналог ProfileViewModel из Swift-проектов).
 class ProfileViewModel extends ViewModel<ProfileAction> {
@@ -54,15 +55,19 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
     PurchaseManager? purchaseManager,
     UsageManager? usageManager,
     UsageMediator? usageMediator,
+    AiConsentManager? consentManager,
     this.yearlyId = GlobalDefinitions.paygateYearlyId,
     this.weeklyId = GlobalDefinitions.paygateWeeklyId,
   }) : _profileManager = profileManager ?? Injector.shared.profileManager,
        _sessionManager = sessionManager ?? Injector.shared.sessionManager,
        _purchaseManager = purchaseManager ?? Injector.shared.purchaseManager,
-       _usageManager = usageManager ?? Injector.shared.usageManager {
+       _usageManager = usageManager ?? Injector.shared.usageManager,
+       _consentManager = consentManager ?? Injector.shared.aiConsentManager {
     _profile = _profileManager.profile;
     // Вкладка живёт всё время: генерацию потратили на другом экране — обновляем счётчик.
     _usageChanges = (usageMediator ?? Injector.shared.usageMediator).changes.listen((_) => loadPlan());
+    // «AI & privacy — On/Off» меняется и на экране согласия, и в самом «AI & privacy».
+    _consentChanges = _consentManager.changes.listen((_) => notifyListeners());
   }
 
   final String yearlyId;
@@ -77,7 +82,11 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
 
   final UsageManager _usageManager;
 
+  final AiConsentManager _consentManager;
+
   late final StreamSubscription<void> _usageChanges;
+
+  late final StreamSubscription<bool> _consentChanges;
 
   Profile? _profile;
 
@@ -97,6 +106,9 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
 
   PaygateFailure? get failure => _failure;
 
+  /// Строка «AI & privacy»: On — переписки можно передавать ИИ.
+  bool get isAiSharingAllowed => _consentManager.isGranted;
+
   Future<void> loadPlan() async {
     if (await _sessionManager.hasActiveSubscriptions()) {
       final subscription = await _sessionManager.activeSubscription();
@@ -115,6 +127,8 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
   );
 
   void openAboutYou() => emit(ProfileAction.openAboutYou);
+
+  void openAiPrivacy() => emit(ProfileAction.openAiPrivacy);
 
   void goUnlimited() => emit(ProfileAction.openPlus);
 
@@ -153,6 +167,7 @@ class ProfileViewModel extends ViewModel<ProfileAction> {
   @override
   void dispose() {
     _usageChanges.cancel();
+    _consentChanges.cancel();
     super.dispose();
   }
 

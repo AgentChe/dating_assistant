@@ -9,6 +9,7 @@ import 'package:dating_assistant/service/coach/model/coach_conversation.dart';
 import 'package:dating_assistant/service/coach/model/coach_reply.dart';
 import 'package:dating_assistant/service/coach/model/coach_tone.dart';
 import 'package:dating_assistant/service/connectivity/connectivity_manager.dart';
+import 'package:dating_assistant/service/consent/ai_consent_manager.dart';
 import 'package:dating_assistant/service/history/history_manager.dart';
 import 'package:dating_assistant/service/usage/generation_limit.dart';
 import 'package:dating_assistant/service/usage/usage_manager.dart';
@@ -291,7 +292,9 @@ class DatingAdviceViewModel extends ViewModel<DatingAdviceAction> {
         break;
       } catch (error) {
         final isLimit = UsageManager.isGenerationLimit(error);
-        if (!isLimit) {
+        // «Not now» на экране согласия — не ошибка: сообщение просто не ушло и возвращается в поле.
+        final isDeclined = AiConsentManager.isDeclined(error);
+        if (!isLimit && !isDeclined) {
           debugPrint('DatingAdviceViewModel: $error');
           if (await tryAgain?.call(error) ?? false) continue;
         }

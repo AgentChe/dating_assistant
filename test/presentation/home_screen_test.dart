@@ -9,6 +9,7 @@ import 'package:dating_assistant/service/usage/usage_mediator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_analysis.dart';
+import '../fakes/fake_analytics.dart';
 import '../fakes/fake_history.dart';
 import '../fakes/fake_managers.dart';
 
@@ -32,6 +33,7 @@ void main() {
       sessionManager: FakeSessionManager(isPlus: false),
       usageManager: FakeUsageManager(),
       usageMediator: UsageMediator(),
+      analyticsManager: FakeAnalyticsManager(),
     );
     actions = [];
     viewModel.actions.listen(actions.add);
